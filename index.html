@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
   :root {
     --bg: #FAF8F4;
@@ -379,6 +380,13 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   }
+
+  /* ---- remote admin additions ---- */
+  .img-row { display: flex; gap: 12px; align-items: center; }
+  .img-preview { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; border: 1px solid var(--line); }
+  .field input[type="file"] { padding: 8px; font-size: 13px; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .empty-state .btn { margin-top: 14px; }
 </style>
 </head>
 <body>
@@ -386,38 +394,24 @@
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-/* ================= constants & storage ================= */
+/* ================= config, data layer ================= */
 
-const STORAGE_KEY = "svc_products_vikas_v6";
-const WHATSAPP_NUMBER_KEY = "svc_whatsapp_number_v2";
+// 1) Paste your Supabase project values here (Project Settings → API).
+//    The anon key is meant to be public — security comes from the row-level
+//    policies in supabase-setup.sql (anyone can read, only the admin can write).
+const SUPABASE_URL = "https://uhzmjqvirfilavuzplpc.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_fLLSDUKyhJIWxmaRpGq93A_ApujR_3G";
+
+const CONFIGURED = !SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON-KEY");
+const sb = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const BUCKET = "product-images";
 const THEME_KEY = "svc_theme_v2";
-const ADMIN_PIN_KEY = "svc_admin_pin_v2";
+const CACHE_PRODUCTS_KEY = "svc_cache_products_v1";
+const CACHE_WA_KEY = "svc_cache_whatsapp_v1";
 const DEFAULT_WHATSAPP_NUMBER = "918438014305";
-const DEFAULT_PIN = "1947"; // shop owner should change this from admin settings
+const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1533230050512-dc65cca0a921?w=300&q=60";
 
-const DEFAULT_PRODUCTS = [
-  { id: "p1", name: "Vikas", category: "Ground Chakras", unit: "box of 10", price: 3, mrp: 400, img: "./vikas.jpeg" },
-  { id: "p2", name: "Vikram", category: "Ground Chakras", unit: "box of 5", price: 4, mrp: 480, img: "./vikram.png" },
-  { id: "p3", name: "Sivaram", category: "Ground Chakras", unit: "pack of 10", price: 1, mrp: 180, img: "./sivaram.jpg" },
-  { id: "p4", name: "Siva prasath", category: "Ground Chakras", unit: "pack of 5", price: 180, mrp: null, img: "./siva.jpg" },
-
-  { id: "p5", name: "Sakiram", category: "Sparklers", unit: "box of 10", price: 9, mrp: 110, img: "./sakiram.jpg" },
-  { id: "p6", name: "Lokesh", category: "Sparklers", unit: "box of 10", price: 1, mrp: 150, img: "./lokesh.png" },
-  { id: "p7", name: "Saran", category: "Sparklers", unit: "box of 10", price: 1, mrp: null, img: "./saran.jpg" },
-  { id: "p8", name: "Kavin", category: "Sparklers", unit: "box of 5", price: 110, mrp: 130, img: "./kavin.jpg" },
-
-  { id: "p9", name: "Aravind", category: "Aerial", unit: "1 piece", price: 5, mrp: 650, img: "./aravind.jpg" },
-  { id: "p10", name: "Hemanth", category: "Aerial", unit: "1 piece", price: 1, mrp: 1450, img: "./hemanth.png" },
-  { id: "p11", name: "Harish", category: "Aerial", unit: "box of 10", price: 0, mrp: null, img: "./harish.png" },
-  { id: "p12", name: "Prathosh", category: "Aerial", unit: "box of 10", price: 4200000, mrp: 480, img: "./prathosh.jpeg" },
-
-  { id: "p13", name: "Santhosh", category: "Sound Crackers", unit: "box of 100", price: 10, mrp: 250, img: "./santhosh.jpg" },
-  { id: "p14", name: "Karthick", category: "Sound Crackers", unit: "1 piece", price: 10, mrp: null, img: "./karthick.jpg" },
-
-  { id: "p16", name: "Abhi", category: "Gift Boxes", unit: "1 box", price: 1800, mrp: 10, img: "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=300&q=60" },
-  { id: "p17", name: "Lokesh", category: "Gift Boxes", unit: "1 box", price: 3200, mrp: 10, img: "./lokesh.png" },
-  { id: "p18", name: "Kavin", category: "Gift Boxes", unit: "1 box", price: 650, mrp: 5000, img: "./kavin.jpg" },
-];
 function safeGet(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -431,26 +425,83 @@ function safeSet(key, value) {
   catch (e) { console.error("Storage write failed", e); return false; }
 }
 
-function loadProducts() {
+// Cached copy only makes the first paint instant / works briefly offline.
+// The database is the source of truth.
+function loadCachedProducts() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_PRODUCTS;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    return DEFAULT_PRODUCTS;
-  } catch (e) {
-    console.error("Failed to load products, using defaults", e);
-    return DEFAULT_PRODUCTS;
+    const parsed = JSON.parse(safeGet(CACHE_PRODUCTS_KEY, "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) { return []; }
+}
+
+function normalizeProduct(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    category: r.category,
+    unit: r.unit,
+    price: Number(r.price),
+    mrp: r.mrp === null || r.mrp === undefined ? null : Number(r.mrp),
+    img: r.img || PLACEHOLDER_IMG,
+  };
+}
+
+async function fetchProducts() {
+  const { data, error } = await sb.from("products").select("*").order("sort_order", { ascending: true });
+  if (error) throw error;
+  return data.map(normalizeProduct);
+}
+async function fetchWhatsApp() {
+  const { data, error } = await sb.from("settings").select("value").eq("key", "whatsapp_number").maybeSingle();
+  if (error) throw error;
+  return data ? data.value : DEFAULT_WHATSAPP_NUMBER;
+}
+async function saveWhatsApp(num) {
+  const { data, error } = await sb.from("settings").upsert({ key: "whatsapp_number", value: num }).select();
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Not allowed. Please sign in again.");
+}
+async function saveProductRow(id, row) {
+  const q = id ? sb.from("products").update(row).eq("id", id) : sb.from("products").insert(row);
+  const { data, error } = await q.select();
+  if (error) throw error;
+  // RLS blocks silently (0 rows) when the session has expired
+  if (!data || data.length === 0) throw new Error("Not allowed. Please sign in again.");
+}
+async function deleteProductRow(product) {
+  const { data, error } = await sb.from("products").delete().eq("id", product.id).select();
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error("Not allowed. Please sign in again.");
+  // best-effort cleanup of an uploaded image
+  const marker = "/" + BUCKET + "/";
+  const i = (product.img || "").indexOf(marker);
+  if (i !== -1) {
+    const path = decodeURIComponent(product.img.slice(i + marker.length).split("?")[0]);
+    try { await sb.storage.from(BUCKET).remove([path]); } catch (e) { console.warn(e); }
   }
 }
-function saveProducts(products) { return safeSet(STORAGE_KEY, JSON.stringify(products)); }
-function loadWhatsAppNumber() { return safeGet(WHATSAPP_NUMBER_KEY, DEFAULT_WHATSAPP_NUMBER); }
-function saveWhatsAppNumber(num) { return safeSet(WHATSAPP_NUMBER_KEY, num); }
-function loadPin() { return safeGet(ADMIN_PIN_KEY, DEFAULT_PIN); }
-function savePin(pin) { return safeSet(ADMIN_PIN_KEY, pin); }
+
+// Phone photos are huge; shrink before upload.
+async function resizeImage(file, max = 900) {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * scale);
+  c.height = Math.round(bmp.height * scale);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error("Could not process image"))), "image/jpeg", 0.85));
+}
+async function uploadProductImage(file) {
+  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+  const blob = await resizeImage(file);
+  const path = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8) + ".jpg";
+  const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
+  if (error) throw error;
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
 
 function formatRupees(n) { return "₹" + Number(n).toLocaleString("en-IN"); }
-function uid() { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
 
 /* ================= theme ================= */
 
@@ -602,7 +653,7 @@ function ReviewSheet({ items, total, onRemove, onQtyChange, onClose, onCheckout 
   );
 }
 
-function Storefront({ products, theme, onCycleTheme, onOpenAdminGate }) {
+function Storefront({ products, whatsapp, loading, loadError, onRetry, theme, onCycleTheme, onOpenAdminGate }) {
   const [selected, setSelected] = useState({});
   const [activeCategory, setActiveCategory] = useState("All");
   const [query, setQuery] = useState("");
@@ -661,7 +712,7 @@ function Storefront({ products, theme, onCycleTheme, onOpenAdminGate }) {
 
   function handleCheckout() {
     if (selectedItems.length === 0) return;
-    const number = loadWhatsAppNumber();
+    const number = whatsapp;
     const lines = selectedItems.map((i, idx) => `${idx + 1}. ${i.name} x${i.qty} — ${formatRupees(i.price * i.qty)}`);
     const message = "Hi! I'd like to order the following crackers:\n\n" + lines.join("\n") + `\n\nTotal: ${formatRupees(total)}\n\nPlease confirm availability. Thank you!`;
     const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
@@ -740,8 +791,20 @@ function Storefront({ products, theme, onCycleTheme, onOpenAdminGate }) {
 
             {Object.keys(grouped).length === 0 ? (
               <div className="empty-state">
-                <div className="serif">No crackers found</div>
-                <div>Try a different search term or category.</div>
+                {loading && products.length === 0 ? (
+                  <div className="serif">Loading crackers…</div>
+                ) : loadError && products.length === 0 ? (
+                  <>
+                    <div className="serif">Couldn't load the catalogue</div>
+                    <div>{loadError}</div>
+                    <button type="button" className="btn btn-primary" onClick={onRetry}>Try again</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="serif">No crackers found</div>
+                    <div>Try a different search term or category.</div>
+                  </>
+                )}
               </div>
             ) : (
               Object.entries(grouped).map(([cat, items]) => (
@@ -791,61 +854,53 @@ function Storefront({ products, theme, onCycleTheme, onOpenAdminGate }) {
   );
 }
 
-/* ================= admin gate (PIN) ================= */
+/* ================= admin login ================= */
 
-function PinGate({ onSuccess, onCancel }) {
-  const [entered, setEntered] = useState("");
-  const [error, setError] = useState(false);
-  const pinLength = 4;
+function LoginGate({ onSuccess, onCancel }) {
+  const [email, setEmail] = useState(safeGet("svc_admin_email", ""));
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const emailRef = useRef(null);
 
-  function press(digit) {
-    if (entered.length >= pinLength) return;
-    const next = entered + digit;
-    setEntered(next);
-    setError(false);
-    if (next.length === pinLength) {
-      const correct = loadPin();
-      setTimeout(() => {
-        if (next === correct) {
-          onSuccess();
-        } else {
-          setError(true);
-          setEntered("");
-        }
-      }, 120);
-    }
-  }
-  function backspace() { setEntered(prev => prev.slice(0, -1)); setError(false); }
-
+  useEffect(() => { if (emailRef.current) emailRef.current.focus(); }, []);
   useEffect(() => {
-    function handleKey(e) {
-      if (/^[0-9]$/.test(e.key)) press(e.key);
-      else if (e.key === "Backspace") backspace();
-      else if (e.key === "Escape") onCancel();
-    }
+    function handleKey(e) { if (e.key === "Escape") onCancel(); }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  });
+  }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!sb) { setError("Supabase isn't configured yet. See the setup steps."); return; }
+    setBusy(true); setError("");
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(false);
+    if (error) { setError(error.message === "Invalid login credentials" ? "Wrong email or password." : error.message); setPassword(""); return; }
+    safeSet("svc_admin_email", email.trim());
+    onSuccess();
+  }
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pin-title" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="confirm-box">
-        <h2 id="pin-title" className="modal-title">Enter admin PIN</h2>
-        <p style={{ marginBottom: 0 }}>This area is for the shop owner only.</p>
-        <div className="pin-dots" aria-live="polite">
-          {Array.from({ length: pinLength }).map((_, i) => (
-            <span key={i} className={"pin-dot" + (i < entered.length ? " filled" : "")} />
-          ))}
-        </div>
-        {error && <div className="modal-error" style={{ textAlign: "center" }}>Incorrect PIN. Try again.</div>}
-        <div className="pin-pad">
-          {[1,2,3,4,5,6,7,8,9].map(n => (
-            <button key={n} type="button" className="pin-key" onClick={() => press(String(n))}>{n}</button>
-          ))}
-          <button type="button" className="pin-key" onClick={onCancel} style={{ color: "var(--muted)", fontSize: "13px" }}>Cancel</button>
-          <button type="button" className="pin-key" onClick={() => press("0")}>0</button>
-          <button type="button" className="pin-key" onClick={backspace} aria-label="Backspace" style={{ fontSize: "13px" }}>⌫</button>
-        </div>
+        <h2 id="login-title" className="modal-title">Admin login</h2>
+        <p style={{ marginBottom: 14 }}>This area is for the shop owner only.</p>
+        {error && <div className="modal-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="login-email">Email</label>
+            <input id="login-email" ref={emailRef} type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label htmlFor="login-pass">Password</label>
+            <input id="login-pass" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -858,15 +913,25 @@ const BLANK_FORM = { name: "", category: "", unit: "", price: "", mrp: "", img: 
 function ProductFormModal({ initial, categories, onCancel, onSave }) {
   const [form, setForm] = useState(initial ? { ...BLANK_FORM, ...initial, mrp: initial.mrp || "" } : BLANK_FORM);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [imgFile, setImgFile] = useState(null);
+  const [preview, setPreview] = useState("");
   const [useNewCategory, setUseNewCategory] = useState(initial ? !categories.includes(initial.category) : categories.length === 0);
   const firstFieldRef = useRef(null);
 
   useEffect(() => { if (firstFieldRef.current) firstFieldRef.current.focus(); }, []);
+  useEffect(() => {
+    if (!imgFile) { setPreview(""); return; }
+    const url = URL.createObjectURL(imgFile);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imgFile]);
 
   function update(field, value) { setForm(prev => ({ ...prev, [field]: value })); }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    if (busy) return;
     const name = form.name.trim();
     const category = form.category.trim();
     const unit = form.unit.trim();
@@ -879,12 +944,21 @@ function ProductFormModal({ initial, categories, onCancel, onSave }) {
     if (isNaN(priceNum) || priceNum <= 0) { setError("Enter a price greater than 0."); return; }
     if (mrpNum !== null && (isNaN(mrpNum) || mrpNum <= priceNum)) { setError("MRP must be greater than the price, or left blank."); return; }
 
-    onSave({
-      id: initial && initial.id ? initial.id : uid(),
-      name, category, unit, price: priceNum, mrp: mrpNum,
-      img: form.img.trim() || "https://images.unsplash.com/photo-1533230050512-dc65cca0a921?w=300&q=60",
-    });
+    setBusy(true); setError("");
+    try {
+      let img = form.img.trim();
+      if (imgFile) img = await uploadProductImage(imgFile);
+      await onSave({
+        id: initial && initial.id ? initial.id : null,
+        row: { name, category, unit, price: priceNum, mrp: mrpNum, img: img || PLACEHOLDER_IMG },
+      });
+    } catch (err) {
+      setError(err.message || "Something went wrong. Try again.");
+      setBusy(false);
+    }
   }
+
+  const shownImg = preview || form.img;
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pf-title">
@@ -923,25 +997,31 @@ function ProductFormModal({ initial, categories, onCancel, onSave }) {
             </div>
             <div className="field">
               <label htmlFor="pf-price">Price (₹)</label>
-              <input id="pf-price" type="number" min="0" step="1" value={form.price} onChange={(e) => update("price", e.target.value)} placeholder="e.g. 150" />
+              <input id="pf-price" type="number" min="0" step="any" inputMode="decimal" value={form.price} onChange={(e) => update("price", e.target.value)} placeholder="e.g. 150" />
             </div>
           </div>
 
           <div className="field">
             <label htmlFor="pf-mrp">MRP / strike-through price (optional)</label>
-            <input id="pf-mrp" type="number" min="0" step="1" value={form.mrp} onChange={(e) => update("mrp", e.target.value)} placeholder="Leave blank if no discount" />
+            <input id="pf-mrp" type="number" min="0" step="any" inputMode="decimal" value={form.mrp} onChange={(e) => update("mrp", e.target.value)} placeholder="Leave blank if no discount" />
             <div className="field-hint">Shown crossed out next to the price, if higher than the price.</div>
           </div>
 
           <div className="field">
-            <label htmlFor="pf-img">Image URL (optional)</label>
-            <input id="pf-img" type="text" value={form.img} onChange={(e) => update("img", e.target.value)} placeholder="https://…" />
-            <div className="field-hint">Leave blank to use a placeholder image.</div>
+            <label htmlFor="pf-file">Photo</label>
+            <div className="img-row">
+              <img className="img-preview" src={shownImg || PLACEHOLDER_IMG} alt="" onError={(e) => { e.target.style.opacity = "0.25"; }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <input id="pf-file" type="file" accept="image/*" onChange={(e) => setImgFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} />
+                <div className="field-hint">Upload from your phone or computer. It's resized automatically.</div>
+              </div>
+            </div>
+            <input id="pf-img" type="text" style={{ marginTop: 8 }} value={form.img} onChange={(e) => update("img", e.target.value)} placeholder="…or paste an image URL" aria-label="Image URL" />
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
-            <button type="submit" className="btn btn-primary">{initial ? "Save changes" : "Add product"}</button>
+            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : (initial ? "Save changes" : "Add product")}</button>
           </div>
         </form>
       </div>
@@ -950,33 +1030,41 @@ function ProductFormModal({ initial, categories, onCancel, onSave }) {
 }
 
 function ConfirmDeleteModal({ product, onCancel, onConfirm }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function go() {
+    setBusy(true); setError("");
+    try { await onConfirm(); } catch (e) { setError(e.message || "Delete failed."); setBusy(false); }
+  }
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cd-title">
       <div className="confirm-box">
         <h2 id="cd-title" className="modal-title">Delete this product?</h2>
-        <p>"{product.name}" will be removed from the shop. This can't be undone.</p>
+        <p>"{product.name}" will be removed from the shop for everyone. This can't be undone.</p>
+        {error && <div className="modal-error">{error}</div>}
         <div className="modal-actions">
-          <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
-          <button type="button" className="btn btn-danger" onClick={onConfirm}>Delete product</button>
+          <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button type="button" className="btn btn-danger" onClick={go} disabled={busy}>{busy ? "Deleting…" : "Delete product"}</button>
         </div>
       </div>
     </div>
   );
 }
 
-function SettingsModal({ initialNumber, initialPin, onCancel, onSave }) {
+function SettingsModal({ initialNumber, onCancel, onSave }) {
   const [number, setNumber] = useState(initialNumber);
-  const [pin, setPin] = useState(initialPin);
-  const [confirmPin, setConfirmPin] = useState(initialPin);
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const digits = number.replace(/\D/g, "");
     if (digits.length < 8) { setError("Enter a valid WhatsApp number with country code, digits only (e.g. 919876543210)."); return; }
-    if (!/^\d{4,6}$/.test(pin)) { setError("PIN must be 4 to 6 digits."); return; }
-    if (pin !== confirmPin) { setError("PIN and confirmation don't match."); return; }
-    onSave(digits, pin);
+    if (password && password.length < 8) { setError("New password must be at least 8 characters."); return; }
+    setBusy(true); setError("");
+    try { await onSave(digits, password); }
+    catch (err) { setError(err.message || "Could not save settings."); setBusy(false); }
   }
 
   return (
@@ -987,23 +1075,17 @@ function SettingsModal({ initialNumber, initialPin, onCancel, onSave }) {
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="set-number">WhatsApp number for orders</label>
-            <input id="set-number" type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Country code + number, e.g. 919876543210" />
+            <input id="set-number" type="text" inputMode="numeric" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Country code + number, e.g. 919876543210" />
             <div className="field-hint">Digits only, starting with the country code. No + or spaces needed.</div>
           </div>
-          <div className="field-row">
-            <div className="field">
-              <label htmlFor="set-pin">Admin PIN</label>
-              <input id="set-pin" type="text" inputMode="numeric" maxLength="6" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digits" />
-            </div>
-            <div className="field">
-              <label htmlFor="set-pin-confirm">Confirm PIN</label>
-              <input id="set-pin-confirm" type="text" inputMode="numeric" maxLength="6" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))} placeholder="Repeat PIN" />
-            </div>
+          <div className="field">
+            <label htmlFor="set-pass">Change admin password (optional)</label>
+            <input id="set-pass" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Leave blank to keep the current one" />
           </div>
-          <div className="field-hint" style={{ marginTop: "-6px", marginBottom: "14px" }}>Tap the shop name 5 times on the main page to reach this PIN screen again.</div>
+          <div className="field-hint" style={{ marginBottom: "14px" }}>Tap the shop name 5 times on the main page to reach the admin login again.</div>
           <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save settings</button>
+            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={busy}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Saving…" : "Save settings"}</button>
           </div>
         </form>
       </div>
@@ -1011,12 +1093,10 @@ function SettingsModal({ initialNumber, initialPin, onCancel, onSave }) {
   );
 }
 
-function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
+function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onRefresh, onWhatsAppSaved, onSignOut }) {
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState(loadWhatsAppNumber());
-  const [pin, setPin] = useState(loadPin());
   const [toast, setToast] = useState("");
   const [filterCat, setFilterCat] = useState("All");
 
@@ -1034,23 +1114,24 @@ function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
 
   const visible = useMemo(() => filterCat === "All" ? products : products.filter(p => p.category === filterCat), [products, filterCat]);
 
-  function persist(next) { setProducts(next); saveProducts(next); }
-
-  function handleSave(product) {
-    const exists = products.some(p => p.id === product.id);
-    const next = exists ? products.map(p => (p.id === product.id ? product : p)) : [...products, product];
-    persist(next);
+  async function handleSave({ id, row }) {
+    await saveProductRow(id, row);
+    await onRefresh();
     setEditing(null);
-    setToast(exists ? "Product updated." : "Product added.");
+    setToast(id ? "Product updated." : "Product added.");
   }
-  function handleDelete(product) {
-    persist(products.filter(p => p.id !== product.id));
+  async function handleDelete(product) {
+    await deleteProductRow(product);
+    await onRefresh();
     setDeleting(null);
     setToast("Product deleted.");
   }
-  function handleSaveSettings(num, newPin) {
-    saveWhatsAppNumber(num); setWhatsappNumber(num);
-    savePin(newPin); setPin(newPin);
+  async function handleSaveSettings(num, newPassword) {
+    if (num !== whatsapp) { await saveWhatsApp(num); onWhatsAppSaved(num); }
+    if (newPassword) {
+      const { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    }
     setShowSettings(false);
     setToast("Settings saved.");
   }
@@ -1063,13 +1144,14 @@ function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <ThemeToggle theme={theme} onCycle={onCycleTheme} />
             <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSettings(true)}>Shop settings</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onSignOut}>Sign out</button>
           </div>
         </div>
       </header>
 
       <main className="admin-page">
         <h1 className="admin-title">Manage products</h1>
-        <p className="admin-sub">Add, edit, or remove crackers. Changes are saved on this device and appear in the shop immediately.</p>
+        <p className="admin-sub">Signed in as {userEmail}. Changes are saved online and appear in the shop for every customer immediately.</p>
 
         <div className="admin-toolbar">
           <select className="plain-select" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
@@ -1129,7 +1211,7 @@ function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
         <ConfirmDeleteModal product={deleting} onCancel={() => setDeleting(null)} onConfirm={() => handleDelete(deleting)} />
       )}
       {showSettings && (
-        <SettingsModal initialNumber={whatsappNumber} initialPin={pin} onCancel={() => setShowSettings(false)} onSave={handleSaveSettings} />
+        <SettingsModal initialNumber={whatsapp} onCancel={() => setShowSettings(false)} onSave={handleSaveSettings} />
       )}
       {toast && <div className="toast">{toast}</div>}
     </div>
@@ -1139,22 +1221,86 @@ function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
 /* ================= root ================= */
 
 function App() {
-  const [view, setView] = useState("shop"); // "shop" | "gate" | "admin"
-  const [products, setProducts] = useState(loadProducts);
+  const [view, setView] = useState("shop"); // "shop" | "login" | "admin"
+  const [products, setProducts] = useState(loadCachedProducts);
+  const [whatsapp, setWhatsapp] = useState(() => safeGet(CACHE_WA_KEY, DEFAULT_WHATSAPP_NUMBER));
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [session, setSession] = useState(null);
   const [theme, cycleTheme] = useTheme();
 
-  useEffect(() => {
-    try { if (!localStorage.getItem(STORAGE_KEY)) saveProducts(products); }
-    catch (e) { console.error(e); }
+  const refresh = useCallback(async () => {
+    if (!sb) {
+      setLoadError("The shop database isn't connected yet. Add the Supabase URL and key in index.html.");
+      setLoading(false);
+      return;
+    }
+    try {
+      const [list, wa] = await Promise.all([fetchProducts(), fetchWhatsApp()]);
+      setProducts(list);
+      setWhatsapp(wa);
+      setLoadError("");
+      safeSet(CACHE_PRODUCTS_KEY, JSON.stringify(list));
+      safeSet(CACHE_WA_KEY, wa);
+    } catch (e) {
+      console.error(e);
+      setLoadError("Check your internet connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  if (view === "gate") {
-    return <PinGate onSuccess={() => setView("admin")} onCancel={() => setView("shop")} />;
+  useEffect(() => {
+    refresh();
+    if (!sb) return;
+    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = sb.auth.onAuthStateChange((_event, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, [refresh]);
+
+  // Pick up changes made elsewhere when the customer returns to the tab
+  useEffect(() => {
+    function onVisible() { if (document.visibilityState === "visible") refresh(); }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refresh]);
+
+  // If the session ends while in admin, drop back to the shop
+  useEffect(() => { if (view === "admin" && !session) setView("shop"); }, [session, view]);
+
+  function openAdmin() { setView(session ? "admin" : "login"); }
+  async function signOut() { if (sb) await sb.auth.signOut(); setView("shop"); }
+
+  if (view === "login") {
+    return <LoginGate onSuccess={() => setView("admin")} onCancel={() => setView("shop")} />;
   }
-  if (view === "admin") {
-    return <Admin products={products} setProducts={setProducts} theme={theme} onCycleTheme={cycleTheme} onBack={() => setView("shop")} />;
+  if (view === "admin" && session) {
+    return (
+      <Admin
+        products={products}
+        whatsapp={whatsapp}
+        userEmail={session.user.email}
+        theme={theme}
+        onCycleTheme={cycleTheme}
+        onBack={() => setView("shop")}
+        onRefresh={refresh}
+        onWhatsAppSaved={(n) => { setWhatsapp(n); safeSet(CACHE_WA_KEY, n); }}
+        onSignOut={signOut}
+      />
+    );
   }
-  return <Storefront products={products} theme={theme} onCycleTheme={cycleTheme} onOpenAdminGate={() => setView("gate")} />;
+  return (
+    <Storefront
+      products={products}
+      whatsapp={whatsapp}
+      loading={loading}
+      loadError={loadError}
+      onRetry={() => { setLoading(true); refresh(); }}
+      theme={theme}
+      onCycleTheme={cycleTheme}
+      onOpenAdminGate={openAdmin}
+    />
+  );
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
