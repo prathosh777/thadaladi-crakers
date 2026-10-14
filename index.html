@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Thadaladi Crackers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #FAF8F4;
+    --surface: #FFFFFF;
+    --surface-2: #F3EFE7;
+    --ink: #231F1C;
+    --muted: #6B655D;
+    --line: #E4DED4;
+    --accent: #B23A2E;
+    --accent-ink: #FFFFFF;
+    --accent-wash: rgba(178,58,46,0.08);
+    --good: #3F7A4E;
+    --shadow: 0 1px 2px rgba(35,31,28,0.04);
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"] {
+    --bg: #151313;
+    --surface: #1F1D1B;
+    --surface-2: #26231F;
+    --ink: #F2EEE8;
+    --muted: #9C948A;
+    --line: #332F2B;
+    --accent: #D9503F;
+    --accent-ink: #1A1110;
+    --accent-wash: rgba(217,80,63,0.14);
+    --good: #6FBF7F;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151313;
+      --surface: #1F1D1B;
+      --surface-2: #26231F;
+      --ink: #F2EEE8;
+      --muted: #9C948A;
+      --line: #332F2B;
+      --accent: #D9503F;
+      --accent-ink: #1A1110;
+      --accent-wash: rgba(217,80,63,0.14);
+      --good: #6FBF7F;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background .2s ease, color .2s ease;
+  }
+  #root { min-height: 100%; }
+  .serif { font-family: 'Fraunces', Georgia, serif; }
+  button, input, select, textarea { font-family: inherit; color: inherit; }
+  a { color: var(--accent); }
+
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  /* ================= layout shell ================= */
+  .shell { display: flex; min-height: 100%; max-width: 1200px; margin: 0 auto; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40;
+    background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .topbar-row {
+    max-width: 1200px; margin: 0 auto; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .brand-btn {
+    background: none; border: none; cursor: pointer; padding: 4px 2px; text-align: left;
+    display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent;
+  }
+  .brand-name { font-size: 21px; line-height: 1.1; white-space: nowrap; }
+  .brand-sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .theme-toggle {
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--muted); }
+  .theme-toggle svg { width: 17px; height: 17px; }
+
+  .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .view-toggle button {
+    background: var(--surface); border: none; color: var(--muted); width: 36px; height: 36px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .view-toggle button + button { border-left: 1px solid var(--line); }
+  .view-toggle button.active { background: var(--accent-wash); color: var(--accent); }
+  .view-toggle svg { width: 16px; height: 16px; }
+
+  /* ---- category rail (mobile) ---- */
+  .rail-wrap {
+    background: var(--bg); border-bottom: 1px solid var(--line);
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 65px); z-index: 39;
+  }
+  .rail { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; max-width: 1200px; margin: 0 auto; scrollbar-width: none; }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail-chip {
+    flex-shrink: 0; background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+    font-size: 13px; font-weight: 600; padding: 8px 13px; border-radius: 20px; cursor: pointer; white-space: nowrap;
+  }
+  .rail-chip.active { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+
+  @media (min-width: 860px) {
+    .rail-wrap { display: none; }
+  }
+
+  /* ---- sidebar (desktop) ---- */
+  .sidebar {
+    display: none; width: 220px; flex-shrink: 0; padding: 24px 16px 24px 16px;
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 65px);
+    align-self: flex-start; max-height: calc(100vh - 65px);
+  }
+  @media (min-width: 860px) {
+    .sidebar { display: block; }
+  }
+  .sidebar-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px 10px; font-weight: 600; }
+  .sidebar-item {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: none; border: none; text-align: left; cursor: pointer;
+    padding: 9px 10px; border-radius: 7px; color: var(--ink); font-size: 14px; font-weight: 500;
+  }
+  .sidebar-item:hover { background: var(--surface-2); }
+  .sidebar-item.active { background: var(--accent-wash); color: var(--accent); font-weight: 700; }
+  .sidebar-count { color: var(--muted); font-size: 12px; font-weight: 400; }
+  .sidebar-item.active .sidebar-count { color: var(--accent); opacity: 0.75; }
+
+  /* ---- main content ---- */
+  .main-col { flex: 1; min-width: 0; }
+  .page { padding: 20px 16px 150px; }
+
+  .search-row { position: relative; margin-bottom: 20px; }
+  .search-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    font-size: 15px; padding: 12px 14px 12px 40px; border-radius: 10px;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 30px 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .section-head:first-child { margin-top: 0; }
+  .section-title { font-size: 19px; font-weight: 700; margin: 0; }
+  .section-count { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+
+  /* ---- grid view ---- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; display: flex; flex-direction: column; gap: 7px; position: relative;
+    box-shadow: var(--shadow);
+  }
+  .card.checked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .card-img-wrap { position: relative; }
+  .card-img {
+    width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover;
+    background: var(--surface-2); display: block;
+  }
+  .card-select-dot {
+    position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.9); background: rgba(35,31,28,0.35);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff;
+    backdrop-filter: blur(2px);
+  }
+  .card-select-dot.on { background: var(--accent); border-color: var(--accent); }
+  .card-select-dot svg { width: 14px; height: 14px; opacity: 0; }
+  .card-select-dot.on svg { opacity: 1; }
+
+  .card-name { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+  .card-unit { color: var(--muted); font-size: 11.5px; }
+  .card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; gap: 8px; }
+  .card-price { font-weight: 700; font-size: 14.5px; white-space: nowrap; }
+  .card-mrp { color: var(--muted); font-size: 11.5px; text-decoration: line-through; margin-right: 5px; }
+
+  .add-btn {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .qty-row { display: flex; align-items: center; border: 1px solid var(--accent); border-radius: 7px; overflow: hidden; flex-shrink: 0; }
+  .qty-btn {
+    background: var(--accent-wash); border: none; color: var(--accent); width: 26px; height: 26px;
+    font-size: 16px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-val { width: 24px; text-align: center; font-size: 12.5px; font-weight: 700; }
+
+  /* ---- list view (rate-card style) ---- */
+  .rate-list { display: flex; flex-direction: column; }
+  .rate-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-thumb { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .rate-mid { flex: 1; min-width: 0; }
+  .rate-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .rate-unit { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .rate-price-block { text-align: right; flex-shrink: 0; min-width: 62px; }
+  .rate-price { font-weight: 700; font-size: 14.5px; }
+  .rate-action { flex-shrink: 0; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .serif { font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+
+  /* ---- checkout bar ---- */
+  .checkout-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    pointer-events: none;
+  }
+  .checkout-inner {
+    max-width: 1200px; margin: 0 auto; margin-left: auto; margin-right: auto;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.14); pointer-events: auto;
+  }
+  :root[data-theme="dark"] .checkout-inner { box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+  @media (min-width: 860px) {
+    .checkout-inner { max-width: 700px; }
+  }
+  .checkout-meta { min-width: 0; }
+  .checkout-count { font-size: 12px; color: var(--muted); }
+  .checkout-total { font-size: 19px; font-weight: 800; }
+  .checkout-btn {
+    background: var(--accent); color: var(--accent-ink); border: none;
+    font-weight: 700; font-size: 14px; padding: 12px 18px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;
+  }
+  .checkout-btn:hover { filter: brightness(1.06); }
+  .checkout-btn svg { width: 17px; height: 17px; }
+  .checkout-view-link {
+    background: none; border: none; color: var(--muted); font-size: 12px; text-decoration: underline;
+    cursor: pointer; padding: 0; margin-top: 2px;
+  }
+
+  /* ---- review sheet ---- */
+  .sheet-overlay {
+    position: fixed; inset: 0; background: rgba(20,17,15,0.45); z-index: 90;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  @media (min-width: 640px) { .sheet-overlay { align-items: center; } }
+  .sheet {
+    background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 460px;
+    border-radius: 16px 16px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 640px) { .sheet { border-radius: 16px; } }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sheet-title { font-size: 18px; font-weight: 700; margin: 0; }
+  .sheet-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+  .sheet-close svg { width: 20px; height: 20px; }
+  .sheet-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .sheet-row-name { flex: 1; font-size: 13.5px; font-weight: 600; }
+  .sheet-row-unit { color: var(--muted); font-size: 11.5px; }
+  .sheet-row-total { font-weight: 700; font-size: 13.5px; min-width: 66px; text-align: right; }
+  .sheet-remove { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
+  .sheet-remove svg { width: 15px; height: 15px; }
+  .sheet-total-row { display: flex; justify-content: space-between; padding-top: 14px; font-weight: 800; font-size: 16px; }
+
+  /* ================= admin ================= */
+  .admin-header {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40;
+    background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px;
+  }
+  .admin-header-row { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .back-btn { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 6px 0; }
+  .back-btn:hover { color: var(--accent); }
+  .admin-page { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+  .admin-title { font-size: 24px; margin: 0 0 4px; font-weight: 700; }
+  .admin-sub { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+
+  .btn { font-size: 13px; font-weight: 700; padding: 10px 16px; border-radius: 9px; cursor: pointer; border: 1px solid transparent; }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--muted); }
+  .btn-danger { background: transparent; border-color: var(--line); color: var(--accent); }
+  .btn-danger:hover { background: var(--accent-wash); }
+  .btn-sm { padding: 6px 11px; font-size: 12px; }
+
+  .admin-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 10px; flex-wrap: wrap; }
+
+  .admin-table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: auto; background: var(--surface); }
+  table.admin-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  .admin-table th {
+    text-align: left; font-size: 11px; color: var(--muted); font-weight: 600;
+    padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2);
+    position: sticky; top: 0;
+  }
+  .admin-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: middle; }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-thumb { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .name-cell { display: flex; align-items: center; gap: 10px; }
+  .row-actions { display: flex; gap: 6px; }
+  .price-cell { font-weight: 700; }
+  .cat-badge { background: var(--surface-2); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+
+  select.plain-select {
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    padding: 9px 12px; border-radius: 9px; font-size: 13px;
+  }
+
+  /* ---- modal ---- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(20,17,15,0.45); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+  @media (min-width: 640px) { .modal-overlay { align-items: center; } }
+  .modal {
+    background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 480px;
+    border-radius: 16px 16px 0 0; padding: 22px; max-height: 90vh; overflow-y: auto;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 640px) { .modal { border-radius: 16px; } }
+  .modal-title { font-size: 18px; margin: 0 0 18px; font-weight: 700; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    font-size: 14px; padding: 10px 12px; border-radius: 9px;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+  .field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+  .modal-error { background: var(--accent-wash); border: 1px solid var(--accent); color: var(--accent); font-size: 12.5px; padding: 9px 11px; border-radius: 9px; margin-bottom: 14px; }
+
+  .confirm-box { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 22px; max-width: 380px; width: 100%; }
+  .confirm-box p { font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 18px; }
+
+  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 22px 0; }
+  .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 260px; margin: 0 auto; }
+  .pin-key {
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    font-size: 18px; font-weight: 600; padding: 16px 0; border-radius: 12px; cursor: pointer;
+  }
+  .pin-key:hover { border-color: var(--muted); }
+  .pin-key.wide { grid-column: span 1; }
+
+  .toast {
+    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--bg); font-weight: 600; font-size: 13px;
+    padding: 10px 18px; border-radius: 10px; z-index: 200; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    max-width: calc(100vw - 32px); text-align: center;
+  }
+
+  .admin-empty { text-align: center; padding: 50px 20px; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* ================= constants & storage ================= */
+
+const STORAGE_KEY = "svc_products_vikas_v5";
+const WHATSAPP_NUMBER_KEY = "svc_whatsapp_number_v2";
+const THEME_KEY = "svc_theme_v2";
+const ADMIN_PIN_KEY = "svc_admin_pin_v2";
+const DEFAULT_WHATSAPP_NUMBER = "919876543210";
+const DEFAULT_PIN = "1947"; // shop owner should change this from admin settings
+
+const DEFAULT_PRODUCTS = [
+  { id: "p1", name: "Vikas", category: "Ground Chakras", unit: "box of 10", price: 3, mrp: 400, img: "./vikas.jpeg" },
+  { id: "p2", name: "Vikram", category: "Ground Chakras", unit: "box of 5", price: 4, mrp: 480, img: "./vikram.png" },
+  { id: "p3", name: "Sivaram", category: "Ground Chakras", unit: "pack of 10", price: 1, mrp: 180, img: "./sivaram.jpg" },
+  { id: "p4", name: "Siva prasath", category: "Ground Chakras", unit: "pack of 5", price: 180, mrp: null, img: "./siva prasad.jpg" },
+
+  { id: "p5", name: "Sakiram", category: "Sparklers", unit: "box of 10", price: 9, mrp: 110, img: "./sakiram.jpg" },
+  { id: "p6", name: "Lokesh", category: "Sparklers", unit: "box of 10", price: 1, mrp: 150, img: "./lokesh.png" },
+  { id: "p7", name: "Saran", category: "Sparklers", unit: "box of 10", price: 1, mrp: null, img: "./saran.jpg" },
+  { id: "p8", name: "Kavin", category: "Sparklers", unit: "box of 5", price: 110, mrp: 130, img: "./kavin.jpg" },
+
+  { id: "p9", name: "Aravind", category: "Aerial", unit: "1 piece", price: 5, mrp: 650, img: "./aravind.jpg" },
+  { id: "p10", name: "Hemanth", category: "Aerial", unit: "1 piece", price: 1, mrp: 1450, img: "./hemanth.png" },
+  { id: "p11", name: "Harish", category: "Aerial", unit: "box of 10", price: 0, mrp: null, img: "./harish.png" },
+  { id: "p12", name: "Prathosh", category: "Aerial", unit: "box of 10", price: 4200000000000, mrp: 480, img: "https://images.unsplash.com/photo-1576251512827-38a82ba566a8?w=300&q=60" },
+
+  { id: "p13", name: "Santhosh", category: "Sound Crackers", unit: "box of 100", price: 10, mrp: 250, img: "./santhosh.jpg" },
+  { id: "p14", name: "Karthick", category: "Sound Crackers", unit: "1 piece", price: 10, mrp: null, img: "./karthick.jpg" },
+
+  { id: "p16", name: "Abhi", category: "Gift Boxes", unit: "1 box", price: 1800, mrp: 10, img: "https://images.unsplash.com/photo-1509557965875-b88c97052f0e?w=300&q=60" },
+  { id: "p17", name: "Lokesh", category: "Gift Boxes", unit: "1 box", price: 3200, mrp: 10, img: "./lokesh.png" },
+  { id: "p18", name: "Kavin", category: "Gift Boxes", unit: "1 box", price: 650, mrp: 5000, img: "./kavin.jpg" },
+];
+function safeGet(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v === null ? fallback : v;
+  } catch (e) {
+    return fallback;
+  }
+}
+function safeSet(key, value) {
+  try { localStorage.setItem(key, value); return true; }
+  catch (e) { console.error("Storage write failed", e); return false; }
+}
+
+function loadProducts() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_PRODUCTS;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return DEFAULT_PRODUCTS;
+  } catch (e) {
+    console.error("Failed to load products, using defaults", e);
+    return DEFAULT_PRODUCTS;
+  }
+}
+function saveProducts(products) { return safeSet(STORAGE_KEY, JSON.stringify(products)); }
+function loadWhatsAppNumber() { return safeGet(WHATSAPP_NUMBER_KEY, DEFAULT_WHATSAPP_NUMBER); }
+function saveWhatsAppNumber(num) { return safeSet(WHATSAPP_NUMBER_KEY, num); }
+function loadPin() { return safeGet(ADMIN_PIN_KEY, DEFAULT_PIN); }
+function savePin(pin) { return safeSet(ADMIN_PIN_KEY, pin); }
+
+function formatRupees(n) { return "₹" + Number(n).toLocaleString("en-IN"); }
+function uid() { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ================= theme ================= */
+
+function useTheme() {
+  const [theme, setTheme] = useState(() => safeGet(THEME_KEY, "system"));
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "system") {
+      root.removeAttribute("data-theme");
+    } else {
+      root.setAttribute("data-theme", theme);
+    }
+    safeSet(THEME_KEY, theme);
+  }, [theme]);
+
+  const cycleTheme = useCallback(() => {
+    setTheme(prev => (prev === "system" ? "light" : prev === "light" ? "dark" : "system"));
+  }, []);
+
+  return [theme, cycleTheme];
+}
+
+/* ================= icons ================= */
+
+const CheckIcon = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5L8 14.5L16 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const WhatsAppIcon = () => (<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.6-13.58h-.06zM12.05 18.5h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.58 6.58 0 0 1 10.17-8.3 6.53 6.53 0 0 1 1.94 4.67 6.6 6.6 0 0 1-6.5 6.72zm3.6-4.93c-.2-.1-1.17-.58-1.35-.64-.18-.07-.31-.1-.44.1-.13.19-.5.64-.62.77-.11.13-.23.14-.42.05a5.4 5.4 0 0 1-1.6-.98 5.98 5.98 0 0 1-1.1-1.37c-.12-.19 0-.3.09-.4.09-.09.19-.23.29-.35.1-.11.13-.19.2-.32.06-.13.03-.24-.02-.34-.05-.1-.44-1.06-.6-1.45-.16-.38-.32-.33-.44-.33h-.38c-.13 0-.34.05-.51.24-.18.19-.68.66-.68 1.61 0 .95.7 1.87.8 2 .1.13 1.37 2.09 3.32 2.93.46.2.83.32 1.11.41.47.15.9.13 1.24.08.38-.06 1.17-.48 1.33-.94.17-.46.17-.86.12-.94-.05-.08-.18-.13-.38-.23z"/></svg>);
+const CloseIcon = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>);
+const PlusIcon = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>);
+const SunIcon = () => (<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="4" stroke="currentColor" strokeWidth="1.6"/><path d="M10 1.5V3.5M10 16.5V18.5M18.5 10H16.5M3.5 10H1.5M15.8 4.2L14.4 5.6M5.6 14.4L4.2 15.8M15.8 15.8L14.4 14.4M5.6 5.6L4.2 4.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>);
+const MoonIcon = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M17 11.2A7 7 0 1 1 8.8 3a5.6 5.6 0 0 0 8.2 8.2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>);
+const AutoIcon = () => (<svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M7 17H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>);
+const GridIcon = () => (<svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="2.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>);
+const ListIcon = () => (<svg viewBox="0 0 20 20" fill="none"><rect x="2.5" y="3.5" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5"/><path d="M9 5.5H17.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><rect x="2.5" y="12.5" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.5"/><path d="M9 14.5H17.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>);
+const SearchIcon = () => (<svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6"/><path d="M17 17L13.5 13.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>);
+const TrashIcon = () => (<svg viewBox="0 0 20 20" fill="none"><path d="M4 5.5H16M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6 5.5l.7 10.2a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9L14 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+
+/* ================= theme toggle button ================= */
+
+function ThemeToggle({ theme, onCycle }) {
+  const icon = theme === "light" ? <SunIcon /> : theme === "dark" ? <MoonIcon /> : <AutoIcon />;
+  const label = theme === "light" ? "Light theme (tap for dark)" : theme === "dark" ? "Dark theme (tap for auto)" : "Auto theme (tap for light)";
+  return (
+    <button type="button" className="theme-toggle" onClick={onCycle} aria-label={label} title={label}>
+      {icon}
+    </button>
+  );
+}
+
+/* ================= storefront ================= */
+
+function GridCard({ product, qty, onToggle, onQtyChange }) {
+  const checked = qty > 0;
+  return (
+    <div className={"card" + (checked ? " checked" : "")}>
+      <div className="card-img-wrap">
+        <img className="card-img" src={product.img} alt={product.name} loading="lazy" onError={(e) => { e.target.style.opacity = "0.25"; }} />
+        <button
+          type="button"
+          className={"card-select-dot" + (checked ? " on" : "")}
+          aria-label={checked ? "Remove " + product.name : "Select " + product.name}
+          aria-pressed={checked}
+          onClick={() => onToggle(product.id)}
+        >
+          <CheckIcon />
+        </button>
+      </div>
+      <div className="card-name">{product.name}</div>
+      <div className="card-unit">{product.unit}</div>
+      <div className="card-bottom">
+        <span>
+          {product.mrp && <span className="card-mrp">{formatRupees(product.mrp)}</span>}
+          <span className="card-price">{formatRupees(product.price)}</span>
+        </span>
+        {checked ? (
+          <div className="qty-row">
+            <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + product.name} onClick={() => onQtyChange(product.id, qty - 1)}>−</button>
+            <span className="qty-val">{qty}</span>
+            <button type="button" className="qty-btn" aria-label={"Increase quantity of " + product.name} onClick={() => onQtyChange(product.id, qty + 1)}>+</button>
+          </div>
+        ) : (
+          <button type="button" className="add-btn" onClick={() => onToggle(product.id)}>Add</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RateRow({ product, qty, onToggle, onQtyChange }) {
+  const checked = qty > 0;
+  return (
+    <div className="rate-row">
+      <img className="rate-thumb" src={product.img} alt="" loading="lazy" onError={(e) => { e.target.style.opacity = "0.2"; }} />
+      <div className="rate-mid">
+        <div className="rate-name">{product.name}</div>
+        <div className="rate-unit">{product.unit}</div>
+      </div>
+      <div className="rate-price-block">
+        {product.mrp && <div className="card-mrp">{formatRupees(product.mrp)}</div>}
+        <div className="rate-price">{formatRupees(product.price)}</div>
+      </div>
+      <div className="rate-action">
+        {checked ? (
+          <div className="qty-row">
+            <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + product.name} onClick={() => onQtyChange(product.id, qty - 1)}>−</button>
+            <span className="qty-val">{qty}</span>
+            <button type="button" className="qty-btn" aria-label={"Increase quantity of " + product.name} onClick={() => onQtyChange(product.id, qty + 1)}>+</button>
+          </div>
+        ) : (
+          <button type="button" className="add-btn" onClick={() => onToggle(product.id)}>Add</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReviewSheet({ items, total, onRemove, onQtyChange, onClose, onCheckout }) {
+  return (
+    <div className="sheet-overlay" role="dialog" aria-modal="true" aria-labelledby="review-title" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="sheet">
+        <div className="sheet-head">
+          <h2 id="review-title" className="sheet-title">Your order ({items.length} item{items.length !== 1 ? "s" : ""})</h2>
+          <button type="button" className="sheet-close" onClick={onClose} aria-label="Close"><CloseIcon /></button>
+        </div>
+        {items.map(item => (
+          <div className="sheet-row" key={item.id}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="sheet-row-name">{item.name}</div>
+              <div className="sheet-row-unit">{item.unit} · {formatRupees(item.price)} each</div>
+            </div>
+            <div className="qty-row">
+              <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + item.name} onClick={() => onQtyChange(item.id, item.qty - 1)}>−</button>
+              <span className="qty-val">{item.qty}</span>
+              <button type="button" className="qty-btn" aria-label={"Increase quantity of " + item.name} onClick={() => onQtyChange(item.id, item.qty + 1)}>+</button>
+            </div>
+            <div className="sheet-row-total">{formatRupees(item.qty * item.price)}</div>
+            <button type="button" className="sheet-remove" aria-label={"Remove " + item.name} onClick={() => onRemove(item.id)}><TrashIcon /></button>
+          </div>
+        ))}
+        <div className="sheet-total-row">
+          <span>Total</span>
+          <span>{formatRupees(total)}</span>
+        </div>
+        <button type="button" className="checkout-btn" style={{ width: "100%", justifyContent: "center", marginTop: "16px" }} onClick={onCheckout}>
+          <WhatsAppIcon /> Proceed on WhatsApp
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Storefront({ products, theme, onCycleTheme, onOpenAdminGate }) {
+  const [selected, setSelected] = useState({});
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState("grid"); // grid | list
+  const [showReview, setShowReview] = useState(false);
+  const brandTapCount = useRef(0);
+  const brandTapTimer = useRef(null);
+
+  const categories = useMemo(() => {
+    const set = [];
+    products.forEach(p => { if (!set.includes(p.category)) set.push(p.category); });
+    return set;
+  }, [products]);
+
+  const filtered = useMemo(() => {
+    return products.filter(p => {
+      const matchesCat = activeCategory === "All" || p.category === activeCategory;
+      const matchesQuery = query.trim() === "" || p.name.toLowerCase().includes(query.trim().toLowerCase());
+      return matchesCat && matchesQuery;
+    });
+  }, [products, activeCategory, query]);
+
+  const grouped = useMemo(() => {
+    const map = {};
+    filtered.forEach(p => {
+      if (!map[p.category]) map[p.category] = [];
+      map[p.category].push(p);
+    });
+    return map;
+  }, [filtered]);
+
+  function toggle(id) {
+    setSelected(prev => {
+      const next = { ...prev };
+      if (next[id]) delete next[id]; else next[id] = 1;
+      return next;
+    });
+  }
+  function setQty(id, qty) {
+    setSelected(prev => {
+      const next = { ...prev };
+      if (qty <= 0) delete next[id]; else next[id] = Math.min(qty, 99);
+      return next;
+    });
+  }
+
+  const selectedItems = useMemo(() => {
+    return Object.entries(selected).map(([id, qty]) => {
+      const product = products.find(p => p.id === id);
+      return product ? { ...product, qty } : null;
+    }).filter(Boolean);
+  }, [selected, products]);
+
+  const itemCount = selectedItems.reduce((s, i) => s + i.qty, 0);
+  const total = selectedItems.reduce((s, i) => s + i.qty * i.price, 0);
+
+  function handleCheckout() {
+    if (selectedItems.length === 0) return;
+    const number = loadWhatsAppNumber();
+    const lines = selectedItems.map((i, idx) => `${idx + 1}. ${i.name} x${i.qty} — ${formatRupees(i.price * i.qty)}`);
+    const message = "Hi! I'd like to order the following crackers:\n\n" + lines.join("\n") + `\n\nTotal: ${formatRupees(total)}\n\nPlease confirm availability. Thank you!`;
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function scrollToCategory(cat) {
+    setActiveCategory(cat);
+    if (cat === "All") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const el = document.getElementById("cat-" + cat.replace(/\s+/g, "-"));
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.pageYOffset - 130;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  }
+
+  function handleBrandTap() {
+    brandTapCount.current += 1;
+    if (brandTapTimer.current) clearTimeout(brandTapTimer.current);
+    brandTapTimer.current = setTimeout(() => { brandTapCount.current = 0; }, 1500);
+    if (brandTapCount.current >= 5) {
+      brandTapCount.current = 0;
+      onOpenAdminGate();
+    }
+  }
+
+  const ItemComp = view === "grid" ? GridCard : RateRow;
+  const itemWrap = view === "grid" ? "grid" : "rate-list";
+
+  return (
+    <div>
+      <header className="topbar">
+        <div className="topbar-row">
+          <button type="button" className="brand-btn" onClick={handleBrandTap} aria-label="Thadaladi Crackers">
+            <span className="brand-name serif">Thadaladi Crackers</span>
+            <span className="brand-sub">Wholesale &amp; retail · Since 1998</span>
+          </button>
+          <div className="topbar-actions">
+            <div className="view-toggle" role="group" aria-label="Layout">
+              <button type="button" className={view === "grid" ? "active" : ""} aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => setView("grid")}><GridIcon /></button>
+              <button type="button" className={view === "list" ? "active" : ""} aria-pressed={view === "list"} aria-label="List view" onClick={() => setView("list")}><ListIcon /></button>
+            </div>
+            <ThemeToggle theme={theme} onCycle={onCycleTheme} />
+          </div>
+        </div>
+      </header>
+
+      <div className="rail-wrap">
+        <div className="rail">
+          <button type="button" className={"rail-chip" + (activeCategory === "All" ? " active" : "")} onClick={() => scrollToCategory("All")}>All</button>
+          {categories.map(cat => (
+            <button key={cat} type="button" className={"rail-chip" + (activeCategory === cat ? " active" : "")} onClick={() => scrollToCategory(cat)}>{cat}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="shell">
+        <aside className="sidebar">
+          <div className="sidebar-label">Categories</div>
+          <button type="button" className={"sidebar-item" + (activeCategory === "All" ? " active" : "")} onClick={() => scrollToCategory("All")}>
+            <span>All crackers</span><span className="sidebar-count">{products.length}</span>
+          </button>
+          {categories.map(cat => (
+            <button key={cat} type="button" className={"sidebar-item" + (activeCategory === cat ? " active" : "")} onClick={() => scrollToCategory(cat)}>
+              <span>{cat}</span><span className="sidebar-count">{products.filter(p => p.category === cat).length}</span>
+            </button>
+          ))}
+        </aside>
+
+        <div className="main-col">
+          <main className="page">
+            <div className="search-row">
+              <span className="search-icon"><SearchIcon /></span>
+              <input type="text" className="search-input" placeholder="Search crackers by name…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search crackers" />
+            </div>
+
+            {Object.keys(grouped).length === 0 ? (
+              <div className="empty-state">
+                <div className="serif">No crackers found</div>
+                <div>Try a different search term or category.</div>
+              </div>
+            ) : (
+              Object.entries(grouped).map(([cat, items]) => (
+                <section key={cat} id={"cat-" + cat.replace(/\s+/g, "-")}>
+                  <div className="section-head">
+                    <h2 className="section-title">{cat}</h2>
+                    <span className="section-count">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <div className={itemWrap}>
+                    {items.map(product => (
+                      <ItemComp key={product.id} product={product} qty={selected[product.id] || 0} onToggle={toggle} onQtyChange={setQty} />
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
+          </main>
+        </div>
+      </div>
+
+      {itemCount > 0 && (
+        <div className="checkout-bar">
+          <div className="checkout-inner">
+            <div className="checkout-meta">
+              <div className="checkout-count">{itemCount} item{itemCount !== 1 ? "s" : ""} selected</div>
+              <div className="checkout-total">{formatRupees(total)}</div>
+              <button type="button" className="checkout-view-link" onClick={() => setShowReview(true)}>Review order</button>
+            </div>
+            <button type="button" className="checkout-btn" onClick={handleCheckout}>
+              <WhatsAppIcon /> Proceed on WhatsApp
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showReview && (
+        <ReviewSheet
+          items={selectedItems}
+          total={total}
+          onRemove={(id) => setQty(id, 0)}
+          onQtyChange={setQty}
+          onClose={() => setShowReview(false)}
+          onCheckout={() => { setShowReview(false); handleCheckout(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ================= admin gate (PIN) ================= */
+
+function PinGate({ onSuccess, onCancel }) {
+  const [entered, setEntered] = useState("");
+  const [error, setError] = useState(false);
+  const pinLength = 4;
+
+  function press(digit) {
+    if (entered.length >= pinLength) return;
+    const next = entered + digit;
+    setEntered(next);
+    setError(false);
+    if (next.length === pinLength) {
+      const correct = loadPin();
+      setTimeout(() => {
+        if (next === correct) {
+          onSuccess();
+        } else {
+          setError(true);
+          setEntered("");
+        }
+      }, 120);
+    }
+  }
+  function backspace() { setEntered(prev => prev.slice(0, -1)); setError(false); }
+
+  useEffect(() => {
+    function handleKey(e) {
+      if (/^[0-9]$/.test(e.key)) press(e.key);
+      else if (e.key === "Backspace") backspace();
+      else if (e.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  });
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pin-title" onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div className="confirm-box">
+        <h2 id="pin-title" className="modal-title">Enter admin PIN</h2>
+        <p style={{ marginBottom: 0 }}>This area is for the shop owner only.</p>
+        <div className="pin-dots" aria-live="polite">
+          {Array.from({ length: pinLength }).map((_, i) => (
+            <span key={i} className={"pin-dot" + (i < entered.length ? " filled" : "")} />
+          ))}
+        </div>
+        {error && <div className="modal-error" style={{ textAlign: "center" }}>Incorrect PIN. Try again.</div>}
+        <div className="pin-pad">
+          {[1,2,3,4,5,6,7,8,9].map(n => (
+            <button key={n} type="button" className="pin-key" onClick={() => press(String(n))}>{n}</button>
+          ))}
+          <button type="button" className="pin-key" onClick={onCancel} style={{ color: "var(--muted)", fontSize: "13px" }}>Cancel</button>
+          <button type="button" className="pin-key" onClick={() => press("0")}>0</button>
+          <button type="button" className="pin-key" onClick={backspace} aria-label="Backspace" style={{ fontSize: "13px" }}>⌫</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================= admin ================= */
+
+const BLANK_FORM = { name: "", category: "", unit: "", price: "", mrp: "", img: "" };
+
+function ProductFormModal({ initial, categories, onCancel, onSave }) {
+  const [form, setForm] = useState(initial ? { ...BLANK_FORM, ...initial, mrp: initial.mrp || "" } : BLANK_FORM);
+  const [error, setError] = useState("");
+  const [useNewCategory, setUseNewCategory] = useState(initial ? !categories.includes(initial.category) : categories.length === 0);
+  const firstFieldRef = useRef(null);
+
+  useEffect(() => { if (firstFieldRef.current) firstFieldRef.current.focus(); }, []);
+
+  function update(field, value) { setForm(prev => ({ ...prev, [field]: value })); }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const name = form.name.trim();
+    const category = form.category.trim();
+    const unit = form.unit.trim();
+    const priceNum = parseFloat(form.price);
+    const mrpNum = form.mrp === "" ? null : parseFloat(form.mrp);
+
+    if (!name) { setError("Enter a product name."); return; }
+    if (!category) { setError("Enter or choose a category."); return; }
+    if (!unit) { setError("Enter a unit, like 'box of 10'."); return; }
+    if (isNaN(priceNum) || priceNum <= 0) { setError("Enter a price greater than 0."); return; }
+    if (mrpNum !== null && (isNaN(mrpNum) || mrpNum <= priceNum)) { setError("MRP must be greater than the price, or left blank."); return; }
+
+    onSave({
+      id: initial && initial.id ? initial.id : uid(),
+      name, category, unit, price: priceNum, mrp: mrpNum,
+      img: form.img.trim() || "https://images.unsplash.com/photo-1533230050512-dc65cca0a921?w=300&q=60",
+    });
+  }
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pf-title">
+      <div className="modal">
+        <h2 id="pf-title" className="modal-title">{initial ? "Edit product" : "Add product"}</h2>
+        {error && <div className="modal-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="pf-name">Product name</label>
+            <input id="pf-name" ref={firstFieldRef} type="text" value={form.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Wire Sparklers — 10 inch" />
+          </div>
+
+          <div className="field">
+            <label htmlFor="pf-category">Category</label>
+            {useNewCategory || categories.length === 0 ? (
+              <input id="pf-category" type="text" value={form.category} onChange={(e) => update("category", e.target.value)} placeholder="e.g. Sparklers" />
+            ) : (
+              <select id="pf-category" value={form.category} onChange={(e) => update("category", e.target.value)}>
+                <option value="">Choose a category…</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            )}
+            {categories.length > 0 && (
+              <div className="field-hint">
+                <a href="#" onClick={(e) => { e.preventDefault(); setUseNewCategory(v => !v); update("category", ""); }}>
+                  {useNewCategory ? "Choose an existing category instead" : "Create a new category instead"}
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="pf-unit">Unit</label>
+              <input id="pf-unit" type="text" value={form.unit} onChange={(e) => update("unit", e.target.value)} placeholder="e.g. box of 10" />
+            </div>
+            <div className="field">
+              <label htmlFor="pf-price">Price (₹)</label>
+              <input id="pf-price" type="number" min="0" step="1" value={form.price} onChange={(e) => update("price", e.target.value)} placeholder="e.g. 150" />
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="pf-mrp">MRP / strike-through price (optional)</label>
+            <input id="pf-mrp" type="number" min="0" step="1" value={form.mrp} onChange={(e) => update("mrp", e.target.value)} placeholder="Leave blank if no discount" />
+            <div className="field-hint">Shown crossed out next to the price, if higher than the price.</div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="pf-img">Image URL (optional)</label>
+            <input id="pf-img" type="text" value={form.img} onChange={(e) => update("img", e.target.value)} placeholder="https://…" />
+            <div className="field-hint">Leave blank to use a placeholder image.</div>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+            <button type="submit" className="btn btn-primary">{initial ? "Save changes" : "Add product"}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDeleteModal({ product, onCancel, onConfirm }) {
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cd-title">
+      <div className="confirm-box">
+        <h2 id="cd-title" className="modal-title">Delete this product?</h2>
+        <p>"{product.name}" will be removed from the shop. This can't be undone.</p>
+        <div className="modal-actions">
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn btn-danger" onClick={onConfirm}>Delete product</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsModal({ initialNumber, initialPin, onCancel, onSave }) {
+  const [number, setNumber] = useState(initialNumber);
+  const [pin, setPin] = useState(initialPin);
+  const [confirmPin, setConfirmPin] = useState(initialPin);
+  const [error, setError] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const digits = number.replace(/\D/g, "");
+    if (digits.length < 8) { setError("Enter a valid WhatsApp number with country code, digits only (e.g. 919876543210)."); return; }
+    if (!/^\d{4,6}$/.test(pin)) { setError("PIN must be 4 to 6 digits."); return; }
+    if (pin !== confirmPin) { setError("PIN and confirmation don't match."); return; }
+    onSave(digits, pin);
+  }
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="set-title">
+      <div className="modal">
+        <h2 id="set-title" className="modal-title">Shop settings</h2>
+        {error && <div className="modal-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="set-number">WhatsApp number for orders</label>
+            <input id="set-number" type="text" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Country code + number, e.g. 919876543210" />
+            <div className="field-hint">Digits only, starting with the country code. No + or spaces needed.</div>
+          </div>
+          <div className="field-row">
+            <div className="field">
+              <label htmlFor="set-pin">Admin PIN</label>
+              <input id="set-pin" type="text" inputMode="numeric" maxLength="6" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} placeholder="4–6 digits" />
+            </div>
+            <div className="field">
+              <label htmlFor="set-pin-confirm">Confirm PIN</label>
+              <input id="set-pin-confirm" type="text" inputMode="numeric" maxLength="6" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))} placeholder="Repeat PIN" />
+            </div>
+          </div>
+          <div className="field-hint" style={{ marginTop: "-6px", marginBottom: "14px" }}>Tap the shop name 5 times on the main page to reach this PIN screen again.</div>
+          <div className="modal-actions">
+            <button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Save settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Admin({ products, setProducts, theme, onCycleTheme, onBack }) {
+  const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState(loadWhatsAppNumber());
+  const [pin, setPin] = useState(loadPin());
+  const [toast, setToast] = useState("");
+  const [filterCat, setFilterCat] = useState("All");
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 2200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const categories = useMemo(() => {
+    const set = [];
+    products.forEach(p => { if (!set.includes(p.category)) set.push(p.category); });
+    return set;
+  }, [products]);
+
+  const visible = useMemo(() => filterCat === "All" ? products : products.filter(p => p.category === filterCat), [products, filterCat]);
+
+  function persist(next) { setProducts(next); saveProducts(next); }
+
+  function handleSave(product) {
+    const exists = products.some(p => p.id === product.id);
+    const next = exists ? products.map(p => (p.id === product.id ? product : p)) : [...products, product];
+    persist(next);
+    setEditing(null);
+    setToast(exists ? "Product updated." : "Product added.");
+  }
+  function handleDelete(product) {
+    persist(products.filter(p => p.id !== product.id));
+    setDeleting(null);
+    setToast("Product deleted.");
+  }
+  function handleSaveSettings(num, newPin) {
+    saveWhatsAppNumber(num); setWhatsappNumber(num);
+    savePin(newPin); setPin(newPin);
+    setShowSettings(false);
+    setToast("Settings saved.");
+  }
+
+  return (
+    <div>
+      <header className="admin-header">
+        <div className="admin-header-row">
+          <button type="button" className="back-btn" onClick={onBack}>← Back to shop</button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <ThemeToggle theme={theme} onCycle={onCycleTheme} />
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSettings(true)}>Shop settings</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="admin-page">
+        <h1 className="admin-title">Manage products</h1>
+        <p className="admin-sub">Add, edit, or remove crackers. Changes are saved on this device and appear in the shop immediately.</p>
+
+        <div className="admin-toolbar">
+          <select className="plain-select" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
+            <option value="All">All categories ({products.length})</option>
+            {categories.map(c => <option key={c} value={c}>{c} ({products.filter(p => p.category === c).length})</option>)}
+          </select>
+          <button type="button" className="btn btn-primary" onClick={() => setEditing({})}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><PlusIcon /> Add product</span>
+          </button>
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="admin-empty">
+            <div style={{ fontSize: "16px", color: "var(--ink)", marginBottom: "6px", fontWeight: 600 }}>No products yet</div>
+            <div style={{ marginBottom: "16px" }}>Add your first cracker to get the shop started.</div>
+            <button type="button" className="btn btn-primary" onClick={() => setEditing({})}>Add product</button>
+          </div>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr><th>Product</th><th>Category</th><th>Unit</th><th>Price</th><th></th></tr>
+              </thead>
+              <tbody>
+                {visible.map(product => (
+                  <tr key={product.id}>
+                    <td>
+                      <div className="name-cell">
+                        <img className="admin-thumb" src={product.img} alt="" onError={(e) => { e.target.style.opacity = "0.2"; }} />
+                        <span>{product.name}</span>
+                      </div>
+                    </td>
+                    <td><span className="cat-badge">{product.category}</span></td>
+                    <td>{product.unit}</td>
+                    <td className="price-cell">
+                      {product.mrp && <span className="card-mrp">{formatRupees(product.mrp)}</span>}
+                      {formatRupees(product.price)}
+                    </td>
+                    <td>
+                      <div className="row-actions">
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(product)}>Edit</button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => setDeleting(product)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
+
+      {editing !== null && (
+        <ProductFormModal initial={editing.id ? editing : null} categories={categories} onCancel={() => setEditing(null)} onSave={handleSave} />
+      )}
+      {deleting && (
+        <ConfirmDeleteModal product={deleting} onCancel={() => setDeleting(null)} onConfirm={() => handleDelete(deleting)} />
+      )}
+      {showSettings && (
+        <SettingsModal initialNumber={whatsappNumber} initialPin={pin} onCancel={() => setShowSettings(false)} onSave={handleSaveSettings} />
+      )}
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+/* ================= root ================= */
+
+function App() {
+  const [view, setView] = useState("shop"); // "shop" | "gate" | "admin"
+  const [products, setProducts] = useState(loadProducts);
+  const [theme, cycleTheme] = useTheme();
+
+  useEffect(() => {
+    try { if (!localStorage.getItem(STORAGE_KEY)) saveProducts(products); }
+    catch (e) { console.error(e); }
+  }, []);
+
+  if (view === "gate") {
+    return <PinGate onSuccess={() => setView("admin")} onCancel={() => setView("shop")} />;
+  }
+  if (view === "admin") {
+    return <Admin products={products} setProducts={setProducts} theme={theme} onCycleTheme={cycleTheme} onBack={() => setView("shop")} />;
+  }
+  return <Storefront products={products} theme={theme} onCycleTheme={cycleTheme} onOpenAdminGate={() => setView("gate")} />;
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
