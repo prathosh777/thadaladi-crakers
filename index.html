@@ -4,378 +4,373 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Thadaladi Crackers</title>
+<meta name="theme-color" content="#D7261E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
   :root {
-    --bg: #FAF8F4;
+    --bg: #F1F3F6;
     --surface: #FFFFFF;
-    --surface-2: #F3EFE7;
-    --ink: #231F1C;
-    --muted: #6B655D;
-    --line: #E4DED4;
-    --accent: #B23A2E;
+    --surface-2: #F5F5F5;
+    --ink: #212121;
+    --muted: #707070;
+    --line: #E4E4E4;
+    --accent: #D7261E;
     --accent-ink: #FFFFFF;
-    --accent-wash: rgba(178,58,46,0.08);
-    --good: #3F7A4E;
-    --shadow: 0 1px 2px rgba(35,31,28,0.04);
+    --accent-wash: rgba(215,38,30,0.08);
+    --header-bg: #D7261E;
+    --good: #138808;
+    --wa: #1FA855;
+    --wa-ink: #FFFFFF;
+    --shadow: 0 1px 2px rgba(0,0,0,0.06);
 
     box-sizing: border-box;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   :root[data-theme="dark"] {
-    --bg: #151313;
-    --surface: #1F1D1B;
-    --surface-2: #26231F;
-    --ink: #F2EEE8;
-    --muted: #9C948A;
-    --line: #332F2B;
-    --accent: #D9503F;
-    --accent-ink: #1A1110;
-    --accent-wash: rgba(217,80,63,0.14);
-    --good: #6FBF7F;
-    --shadow: 0 1px 2px rgba(0,0,0,0.3);
+    --bg: #101010;
+    --surface: #1C1C1C;
+    --surface-2: #262626;
+    --ink: #F1F1F1;
+    --muted: #A0A0A0;
+    --line: #333333;
+    --accent: #FF5A4D;
+    --accent-ink: #1A0B09;
+    --accent-wash: rgba(255,90,77,0.14);
+    --header-bg: #7A1712;
+    --good: #5FD068;
+    --wa: #25C463;
+    --wa-ink: #07210F;
+    --shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #151313;
-      --surface: #1F1D1B;
-      --surface-2: #26231F;
-      --ink: #F2EEE8;
-      --muted: #9C948A;
-      --line: #332F2B;
-      --accent: #D9503F;
-      --accent-ink: #1A1110;
-      --accent-wash: rgba(217,80,63,0.14);
-      --good: #6FBF7F;
-      --shadow: 0 1px 2px rgba(0,0,0,0.3);
+      --bg: #101010;
+      --surface: #1C1C1C;
+      --surface-2: #262626;
+      --ink: #F1F1F1;
+      --muted: #A0A0A0;
+      --line: #333333;
+      --accent: #FF5A4D;
+      --accent-ink: #1A0B09;
+      --accent-wash: rgba(255,90,77,0.14);
+      --header-bg: #7A1712;
+      --good: #5FD068;
+      --wa: #25C463;
+      --wa-ink: #07210F;
+      --shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
   }
 
   *, *::before, *::after { box-sizing: inherit; }
-  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html { -webkit-text-size-adjust: 100%; }
   html, body { height: 100%; }
   body {
     margin: 0;
     background: var(--bg);
     color: var(--ink);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
-    transition: background .2s ease, color .2s ease;
   }
   #root { min-height: 100%; }
-  .serif { font-family: 'Fraunces', Georgia, serif; }
+  .serif { font-family: inherit; font-weight: 700; }
   button, input, select, textarea { font-family: inherit; color: inherit; }
   a { color: var(--accent); }
+  img { max-width: 100%; }
 
-  ::selection { background: var(--accent); color: var(--accent-ink); }
-
-  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
   }
 
-  /* ================= layout shell ================= */
-  .shell { display: flex; min-height: 100%; max-width: 1200px; margin: 0 auto; }
+  /* ================= storefront ================= */
 
-  /* ---- top bar ---- */
+  /* ---- header ---- */
   .topbar {
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40;
-    background: var(--bg); border-bottom: 1px solid var(--line);
+    background: var(--header-bg); color: #fff;
+    padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 12px;
   }
-  .topbar-row {
-    max-width: 1200px; margin: 0 auto; padding: 14px 16px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
+  .topbar-inner { max-width: 1200px; margin: 0 auto; }
+  .topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .brand-btn {
-    background: none; border: none; cursor: pointer; padding: 4px 2px; text-align: left;
-    display: flex; flex-direction: column; -webkit-tap-highlight-color: transparent;
+    background: none; border: none; cursor: pointer; padding: 2px 0; text-align: left; color: #fff;
+    display: flex; flex-direction: column; min-width: 0; -webkit-user-select: none; user-select: none;
   }
-  .brand-name { font-size: 21px; line-height: 1.1; white-space: nowrap; }
-  .brand-sub { color: var(--muted); font-size: 11px; margin-top: 1px; }
+  .brand-name { font-size: 20px; line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+  .brand-sub { font-size: 11px; opacity: 0.85; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
   .theme-toggle {
     background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .theme-toggle:hover { border-color: var(--muted); }
-  .theme-toggle svg { width: 17px; height: 17px; }
+  .theme-toggle svg { width: 18px; height: 18px; }
+  .topbar .theme-toggle { background: rgba(255,255,255,0.16); border-color: transparent; color: #fff; }
 
-  .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .view-toggle { display: flex; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,0.16); }
   .view-toggle button {
-    background: var(--surface); border: none; color: var(--muted); width: 36px; height: 36px;
+    background: transparent; border: none; color: rgba(255,255,255,0.75); width: 40px; height: 40px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
-  .view-toggle button + button { border-left: 1px solid var(--line); }
-  .view-toggle button.active { background: var(--accent-wash); color: var(--accent); }
-  .view-toggle svg { width: 16px; height: 16px; }
+  .view-toggle button.active { background: #fff; color: var(--header-bg); }
+  .view-toggle svg { width: 18px; height: 18px; }
 
-  /* ---- category rail (mobile) ---- */
-  .rail-wrap {
-    background: var(--bg); border-bottom: 1px solid var(--line);
-    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 65px); z-index: 39;
+  .search-row { position: relative; margin-top: 10px; }
+  .search-input {
+    width: 100%; background: #fff; border: none; color: #212121;
+    font-size: 16px; /* 16px stops iOS zooming on focus */
+    height: 44px; padding: 0 14px 0 42px; border-radius: 8px;
   }
-  .rail { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; max-width: 1200px; margin: 0 auto; scrollbar-width: none; }
+  .search-input::placeholder { color: #8a8a8a; }
+  .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: #707070; pointer-events: none; }
+
+  /* ---- category chips (sticky) ---- */
+  .rail-wrap {
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 39;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .rail { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px; max-width: 1200px; margin: 0 auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .rail::-webkit-scrollbar { display: none; }
   .rail-chip {
-    flex-shrink: 0; background: var(--surface); border: 1px solid var(--line); color: var(--muted);
-    font-size: 13px; font-weight: 600; padding: 8px 13px; border-radius: 20px; cursor: pointer; white-space: nowrap;
+    flex-shrink: 0; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    font-size: 13.5px; font-weight: 600; min-height: 36px; padding: 0 14px; border-radius: 18px; cursor: pointer; white-space: nowrap;
   }
-  .rail-chip.active { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+  .rail-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
-  @media (min-width: 860px) {
-    .rail-wrap { display: none; }
-  }
+  /* ---- page ---- */
+  .page { max-width: 1200px; margin: 0 auto; padding: 8px 8px 130px; }
+  @media (min-width: 640px) { .page { padding: 16px 16px 130px; } }
 
-  /* ---- sidebar (desktop) ---- */
-  .sidebar {
-    display: none; width: 220px; flex-shrink: 0; padding: 24px 16px 24px 16px;
-    position: sticky; top: calc(env(safe-area-inset-top, 0px) + 65px);
-    align-self: flex-start; max-height: calc(100vh - 65px);
-  }
-  @media (min-width: 860px) {
-    .sidebar { display: block; }
-  }
-  .sidebar-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px 10px; font-weight: 600; }
-  .sidebar-item {
-    display: flex; align-items: center; justify-content: space-between; width: 100%;
-    background: none; border: none; text-align: left; cursor: pointer;
-    padding: 9px 10px; border-radius: 7px; color: var(--ink); font-size: 14px; font-weight: 500;
-  }
-  .sidebar-item:hover { background: var(--surface-2); }
-  .sidebar-item.active { background: var(--accent-wash); color: var(--accent); font-weight: 700; }
-  .sidebar-count { color: var(--muted); font-size: 12px; font-weight: 400; }
-  .sidebar-item.active .sidebar-count { color: var(--accent); opacity: 0.75; }
-
-  /* ---- main content ---- */
-  .main-col { flex: 1; min-width: 0; }
-  .page { padding: 20px 16px 150px; }
-
-  .search-row { position: relative; margin-bottom: 20px; }
-  .search-input {
-    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    font-size: 15px; padding: 12px 14px 12px 40px; border-radius: 10px;
-  }
-  .search-input::placeholder { color: var(--muted); }
-  .search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
-
-  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 30px 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-  .section-head:first-child { margin-top: 0; }
-  .section-title { font-size: 19px; font-weight: 700; margin: 0; }
-  .section-count { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 14px 4px 8px; }
+  .section-title { font-size: 16px; font-weight: 800; margin: 0; }
+  .section-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
   /* ---- grid view ---- */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; } }
 
   .card {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-    padding: 12px; display: flex; flex-direction: column; gap: 7px; position: relative;
-    box-shadow: var(--shadow);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow);
   }
-  .card.checked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .card-img-wrap { position: relative; }
-  .card-img {
-    width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover;
-    background: var(--surface-2); display: block;
+  .card.checked { border-color: var(--accent); }
+  .card-img-wrap { position: relative; background: var(--surface-2); }
+  .card-img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .card-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .card-name {
+    font-size: 14px; font-weight: 600; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .card-select-dot {
-    position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%;
-    border: 1.5px solid rgba(255,255,255,0.9); background: rgba(35,31,28,0.35);
-    cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff;
-    backdrop-filter: blur(2px);
-  }
-  .card-select-dot.on { background: var(--accent); border-color: var(--accent); }
-  .card-select-dot svg { width: 14px; height: 14px; opacity: 0; }
-  .card-select-dot.on svg { opacity: 1; }
-
-  .card-name { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
-  .card-unit { color: var(--muted); font-size: 11.5px; }
-  .card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; gap: 8px; }
-  .card-price { font-weight: 700; font-size: 14.5px; white-space: nowrap; }
-  .card-mrp { color: var(--muted); font-size: 11.5px; text-decoration: line-through; margin-right: 5px; }
+  .card-unit { color: var(--muted); font-size: 12px; }
+  .price-line { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 6px; margin-top: 4px; }
+  .card-price { font-weight: 800; font-size: 17px; }
+  .card-mrp { color: var(--muted); font-size: 12.5px; text-decoration: line-through; }
+  .off-tag { color: var(--good); font-size: 12px; font-weight: 700; }
+  .card-action { margin-top: auto; padding-top: 8px; }
 
   .add-btn {
-    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
-    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 7px; cursor: pointer;
-    white-space: nowrap;
+    width: 100%; height: 40px; background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent);
+    font-size: 13.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+    border-radius: 6px; cursor: pointer;
   }
-  .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-btn:active { background: var(--accent-wash); }
 
-  .qty-row { display: flex; align-items: center; border: 1px solid var(--accent); border-radius: 7px; overflow: hidden; flex-shrink: 0; }
+  .qty-row {
+    width: 100%; height: 40px; display: flex; align-items: stretch; justify-content: space-between;
+    background: var(--accent); color: var(--accent-ink); border-radius: 6px; overflow: hidden;
+  }
   .qty-btn {
-    background: var(--accent-wash); border: none; color: var(--accent); width: 26px; height: 26px;
-    font-size: 16px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: inherit; width: 44px;
+    font-size: 22px; font-weight: 600; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
   }
-  .qty-val { width: 24px; text-align: center; font-size: 12.5px; font-weight: 700; }
+  .qty-btn:active { background: rgba(0,0,0,0.12); }
+  .qty-val { display: flex; align-items: center; justify-content: center; flex: 1; font-size: 15px; font-weight: 800; }
 
-  /* ---- list view (rate-card style) ---- */
-  .rate-list { display: flex; flex-direction: column; }
-  .rate-row {
-    display: flex; align-items: center; gap: 12px; padding: 11px 4px;
-    border-bottom: 1px solid var(--line);
-  }
+  /* ---- list view ---- */
+  .rate-list { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .rate-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid var(--line); }
   .rate-row:last-child { border-bottom: none; }
-  .rate-thumb { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .rate-thumb { width: 72px; height: 72px; border-radius: 6px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
   .rate-mid { flex: 1; min-width: 0; }
-  .rate-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
-  .rate-unit { color: var(--muted); font-size: 12px; margin-top: 1px; }
-  .rate-price-block { text-align: right; flex-shrink: 0; min-width: 62px; }
-  .rate-price { font-weight: 700; font-size: 14.5px; }
-  .rate-action { flex-shrink: 0; }
+  .rate-name { font-size: 14.5px; font-weight: 600; line-height: 1.3; }
+  .rate-unit { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .rate-mid .price-line { margin-top: 4px; }
+  .rate-action { flex-shrink: 0; width: 104px; }
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty-state .serif { font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+  .empty-state .serif { font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+  .empty-state .btn { margin-top: 14px; }
 
-  /* ---- checkout bar ---- */
+  .skeleton { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .skeleton .sk-img { aspect-ratio: 1; background: var(--surface-2); animation: pulse 1.2s ease-in-out infinite; }
+  .skeleton .sk-line { height: 12px; margin: 10px; border-radius: 4px; background: var(--surface-2); animation: pulse 1.2s ease-in-out infinite; }
+  .skeleton .sk-line.short { width: 50%; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* ---- cart bar ---- */
   .checkout-bar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-    pointer-events: none;
+    background: var(--surface); border-top: 1px solid var(--line);
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.10);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   }
-  .checkout-inner {
-    max-width: 1200px; margin: 0 auto; margin-left: auto; margin-right: auto;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.14); pointer-events: auto;
-  }
-  :root[data-theme="dark"] .checkout-inner { box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
-  @media (min-width: 860px) {
-    .checkout-inner { max-width: 700px; }
-  }
+  .checkout-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .checkout-meta { min-width: 0; }
   .checkout-count { font-size: 12px; color: var(--muted); }
-  .checkout-total { font-size: 19px; font-weight: 800; }
-  .checkout-btn {
-    background: var(--accent); color: var(--accent-ink); border: none;
-    font-weight: 700; font-size: 14px; padding: 12px 18px; border-radius: 10px; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;
-  }
-  .checkout-btn:hover { filter: brightness(1.06); }
-  .checkout-btn svg { width: 17px; height: 17px; }
+  .checkout-total { font-size: 20px; font-weight: 800; line-height: 1.15; }
   .checkout-view-link {
-    background: none; border: none; color: var(--muted); font-size: 12px; text-decoration: underline;
-    cursor: pointer; padding: 0; margin-top: 2px;
+    background: none; border: none; color: var(--accent); font-size: 12.5px; font-weight: 700;
+    cursor: pointer; padding: 6px 0 0; text-decoration: underline;
   }
+  .checkout-btn {
+    background: var(--wa); color: var(--wa-ink); border: none;
+    font-weight: 800; font-size: 15px; height: 48px; padding: 0 20px; border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; white-space: nowrap;
+  }
+  .checkout-btn:active { filter: brightness(0.92); }
+  .checkout-btn svg { width: 20px; height: 20px; }
 
   /* ---- review sheet ---- */
   .sheet-overlay {
-    position: fixed; inset: 0; background: rgba(20,17,15,0.45); z-index: 90;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90;
     display: flex; align-items: flex-end; justify-content: center;
   }
   @media (min-width: 640px) { .sheet-overlay { align-items: center; } }
   .sheet {
-    background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 460px;
-    border-radius: 16px 16px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    background: var(--surface); width: 100%; max-width: 480px;
+    border-radius: 16px 16px 0 0; padding: 18px 16px; max-height: 88vh; overflow-y: auto;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
-  @media (min-width: 640px) { .sheet { border-radius: 16px; } }
-  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .sheet-title { font-size: 18px; font-weight: 700; margin: 0; }
-  .sheet-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
-  .sheet-close svg { width: 20px; height: 20px; }
-  .sheet-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
-  .sheet-row-name { flex: 1; font-size: 13.5px; font-weight: 600; }
-  .sheet-row-unit { color: var(--muted); font-size: 11.5px; }
-  .sheet-row-total { font-weight: 700; font-size: 13.5px; min-width: 66px; text-align: right; }
-  .sheet-remove { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; }
-  .sheet-remove svg { width: 15px; height: 15px; }
-  .sheet-total-row { display: flex; justify-content: space-between; padding-top: 14px; font-weight: 800; font-size: 16px; }
+  @media (min-width: 640px) { .sheet { border-radius: 12px; } }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .sheet-title { font-size: 17px; font-weight: 800; margin: 0; }
+  .sheet-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 8px; margin: -8px; }
+  .sheet-close svg { width: 22px; height: 22px; }
+  .sheet-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .sheet-row .qty-row { width: 112px; flex-shrink: 0; }
+  .sheet-row-name { font-size: 14px; font-weight: 600; }
+  .sheet-row-unit { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .sheet-row-total { font-weight: 800; font-size: 14px; min-width: 64px; text-align: right; }
+  .sheet-remove { background: none; border: none; color: var(--muted); cursor: pointer; padding: 8px; margin: -4px; }
+  .sheet-remove svg { width: 18px; height: 18px; }
+  .sheet-total-row { display: flex; justify-content: space-between; padding-top: 14px; font-weight: 800; font-size: 17px; }
 
   /* ================= admin ================= */
   .admin-header {
-    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40;
-    background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px;
+    position: sticky; top: 0; z-index: 40;
+    background: var(--header-bg); color: #fff;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
   }
-  .admin-header-row { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .back-btn { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 6px 0; }
-  .back-btn:hover { color: var(--accent); }
-  .admin-page { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
-  .admin-title { font-size: 24px; margin: 0 0 4px; font-weight: 700; }
-  .admin-sub { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+  .admin-header-row { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .back-btn {
+    background: none; border: none; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 4px 0 0; white-space: nowrap;
+  }
+  .admin-header-actions { display: flex; gap: 6px; align-items: center; }
+  .admin-header .theme-toggle { background: rgba(255,255,255,0.16); border-color: transparent; color: #fff; }
+  .admin-header .btn-ghost { color: #fff; border-color: rgba(255,255,255,0.4); }
+  .admin-header .btn-ghost:active { background: rgba(255,255,255,0.16); }
 
-  .btn { font-size: 13px; font-weight: 700; padding: 10px 16px; border-radius: 9px; cursor: pointer; border: 1px solid transparent; }
+  .admin-page { max-width: 900px; margin: 0 auto; padding: 14px 12px 110px; }
+  .admin-title { font-size: 20px; margin: 0 0 2px; font-weight: 800; }
+  .admin-sub { color: var(--muted); font-size: 12.5px; line-height: 1.4; margin: 0 0 14px; word-break: break-word; }
+
+  .btn {
+    font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
   .btn-primary { background: var(--accent); color: var(--accent-ink); }
-  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:active { filter: brightness(0.92); }
   .btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
-  .btn-ghost:hover { border-color: var(--muted); }
   .btn-danger { background: transparent; border-color: var(--line); color: var(--accent); }
-  .btn-danger:hover { background: var(--accent-wash); }
-  .btn-sm { padding: 6px 11px; font-size: 12px; }
+  .btn-danger:active { background: var(--accent-wash); }
+  .btn-sm { min-height: 40px; padding: 0 12px; font-size: 13px; }
 
-  .admin-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 10px; flex-wrap: wrap; }
-
-  .admin-table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: auto; background: var(--surface); }
-  table.admin-table { width: 100%; border-collapse: collapse; min-width: 640px; }
-  .admin-table th {
-    text-align: left; font-size: 11px; color: var(--muted); font-weight: 600;
-    padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2);
-    position: sticky; top: 0;
-  }
-  .admin-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: middle; }
-  .admin-table tr:last-child td { border-bottom: none; }
-  .admin-thumb { width: 38px; height: 38px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
-  .name-cell { display: flex; align-items: center; gap: 10px; }
-  .row-actions { display: flex; gap: 6px; }
-  .price-cell { font-weight: 700; }
-  .cat-badge { background: var(--surface-2); color: var(--muted); font-size: 11px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
-
+  .admin-toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
   select.plain-select {
-    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    padding: 9px 12px; border-radius: 9px; font-size: 13px;
+    flex: 1; min-width: 0; height: 44px; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    padding: 0 12px; border-radius: 8px; font-size: 16px;
+  }
+  .admin-toolbar .btn-add-desktop { display: none; }
+  @media (min-width: 640px) {
+    .admin-page { padding: 24px 16px 60px; }
+    .admin-toolbar .btn-add-desktop { display: inline-flex; }
+    .admin-toolbar select.plain-select { flex: 0 1 320px; }
+    .admin-toolbar { justify-content: space-between; }
+    .admin-fab { display: none !important; }
   }
 
-  /* ---- modal ---- */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(20,17,15,0.45); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+  /* ---- product list (cards on every screen size) ---- */
+  .admin-list { display: grid; gap: 10px; }
+  @media (min-width: 640px) { .admin-list { grid-template-columns: 1fr 1fr; } }
+  .admin-item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; box-shadow: var(--shadow); }
+  .admin-item-top { display: flex; gap: 12px; align-items: center; }
+  .admin-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: var(--surface-2); flex-shrink: 0; }
+  .admin-item-info { flex: 1; min-width: 0; }
+  .admin-item-name { font-size: 15px; font-weight: 700; line-height: 1.3; word-break: break-word; }
+  .admin-item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+  .cat-badge { background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+  .admin-item-price { margin-top: 4px; display: flex; align-items: baseline; gap: 6px; }
+  .admin-item-price strong { font-size: 16px; font-weight: 800; }
+  .admin-item-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+
+  .admin-fab {
+    position: fixed; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 45;
+    height: 52px; padding: 0 20px 0 16px; border-radius: 26px; box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  }
+  .admin-fab svg { width: 20px; height: 20px; }
+
+  /* ---- modal (full-height sheet on phones, scrolls inside) ---- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; justify-content: center; overscroll-behavior: contain; }
   @media (min-width: 640px) { .modal-overlay { align-items: center; } }
   .modal {
-    background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 480px;
-    border-radius: 16px 16px 0 0; padding: 22px; max-height: 90vh; overflow-y: auto;
-    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg); width: 100%; max-width: 480px;
+    border-radius: 16px 16px 0 0; padding: 18px 16px 0; max-height: 94vh; max-height: 94dvh;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
-  @media (min-width: 640px) { .modal { border-radius: 16px; } }
-  .modal-title { font-size: 18px; margin: 0 0 18px; font-weight: 700; }
+  @media (min-width: 640px) { .modal { border-radius: 14px; padding: 22px 22px 0; } }
+  .modal-title { font-size: 18px; margin: 0 0 14px; font-weight: 800; }
   .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .field label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
   .field input, .field select, .field textarea {
-    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    font-size: 14px; padding: 10px 12px; border-radius: 9px;
+    width: 100%; min-height: 46px; background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    font-size: 16px; /* prevents iOS zoom on focus */ padding: 10px 12px; border-radius: 8px;
   }
   .field-row { display: flex; gap: 10px; }
-  .field-row .field { flex: 1; }
-  .field-hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
-  .modal-error { background: var(--accent-wash); border: 1px solid var(--accent); color: var(--accent); font-size: 12.5px; padding: 9px 11px; border-radius: 9px; margin-bottom: 14px; }
-
-  .confirm-box { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 22px; max-width: 380px; width: 100%; }
-  .confirm-box p { font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 18px; }
-
-  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 22px 0; }
-  .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); }
-  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
-  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 260px; margin: 0 auto; }
-  .pin-key {
-    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
-    font-size: 18px; font-weight: 600; padding: 16px 0; border-radius: 12px; cursor: pointer;
+  .field-row .field { flex: 1; min-width: 0; }
+  .field-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .modal-actions {
+    display: flex; gap: 10px; justify-content: flex-end; margin: 6px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line);
   }
-  .pin-key:hover { border-color: var(--muted); }
-  .pin-key.wide { grid-column: span 1; }
+  .modal-actions .btn { flex: 1; }
+  @media (min-width: 640px) { .modal-actions { margin: 6px -22px 0; padding: 12px 22px 16px; } .modal-actions .btn { flex: 0 0 auto; } }
+  .modal-error { background: var(--accent-wash); border: 1px solid var(--accent); color: var(--accent); font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; }
+
+  .confirm-box {
+    background: var(--bg); width: 100%; max-width: 420px; border-radius: 16px 16px 0 0;
+    padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (min-width: 640px) { .confirm-box { border-radius: 14px; padding: 22px; } }
+  .confirm-box p { font-size: 14px; color: var(--ink); line-height: 1.5; margin: 0 0 16px; }
+  .confirm-box .modal-actions { position: static; margin: 0; padding: 0; border: none; background: none; }
 
   .toast {
-    position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
     background: var(--ink); color: var(--bg); font-weight: 600; font-size: 13px;
-    padding: 10px 18px; border-radius: 10px; z-index: 200; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    padding: 10px 18px; border-radius: 8px; z-index: 200; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
     max-width: calc(100vw - 32px); text-align: center;
   }
 
-  .admin-empty { text-align: center; padding: 50px 20px; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+  .admin-empty { text-align: center; padding: 40px 20px; color: var(--muted); border: 1px dashed var(--line); border-radius: 10px; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
@@ -553,67 +548,78 @@ function ThemeToggle({ theme, onCycle }) {
 
 /* ================= storefront ================= */
 
-function GridCard({ product, qty, onToggle, onQtyChange }) {
-  const checked = qty > 0;
+function discountPct(p) {
+  return p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+}
+
+function PriceLine({ product }) {
+  const off = discountPct(product);
   return (
-    <div className={"card" + (checked ? " checked" : "")}>
+    <div className="price-line">
+      <span className="card-price">{formatRupees(product.price)}</span>
+      {product.mrp && <span className="card-mrp">{formatRupees(product.mrp)}</span>}
+      {off > 0 && <span className="off-tag">{off}% off</span>}
+    </div>
+  );
+}
+
+function AddControl({ product, qty, onToggle, onQtyChange }) {
+  if (qty > 0) {
+    return (
+      <div className="qty-row">
+        <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + product.name} onClick={() => onQtyChange(product.id, qty - 1)}>−</button>
+        <span className="qty-val" aria-live="polite">{qty}</span>
+        <button type="button" className="qty-btn" aria-label={"Increase quantity of " + product.name} onClick={() => onQtyChange(product.id, qty + 1)}>+</button>
+      </div>
+    );
+  }
+  return <button type="button" className="add-btn" onClick={() => onToggle(product.id)}>Add</button>;
+}
+
+function GridCard({ product, qty, onToggle, onQtyChange }) {
+  return (
+    <div className={"card" + (qty > 0 ? " checked" : "")}>
       <div className="card-img-wrap">
         <img className="card-img" src={product.img} alt={product.name} loading="lazy" onError={(e) => { e.target.style.opacity = "0.25"; }} />
-        <button
-          type="button"
-          className={"card-select-dot" + (checked ? " on" : "")}
-          aria-label={checked ? "Remove " + product.name : "Select " + product.name}
-          aria-pressed={checked}
-          onClick={() => onToggle(product.id)}
-        >
-          <CheckIcon />
-        </button>
       </div>
-      <div className="card-name">{product.name}</div>
-      <div className="card-unit">{product.unit}</div>
-      <div className="card-bottom">
-        <span>
-          {product.mrp && <span className="card-mrp">{formatRupees(product.mrp)}</span>}
-          <span className="card-price">{formatRupees(product.price)}</span>
-        </span>
-        {checked ? (
-          <div className="qty-row">
-            <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + product.name} onClick={() => onQtyChange(product.id, qty - 1)}>−</button>
-            <span className="qty-val">{qty}</span>
-            <button type="button" className="qty-btn" aria-label={"Increase quantity of " + product.name} onClick={() => onQtyChange(product.id, qty + 1)}>+</button>
-          </div>
-        ) : (
-          <button type="button" className="add-btn" onClick={() => onToggle(product.id)}>Add</button>
-        )}
+      <div className="card-body">
+        <div className="card-name">{product.name}</div>
+        <div className="card-unit">{product.unit}</div>
+        <PriceLine product={product} />
+        <div className="card-action">
+          <AddControl product={product} qty={qty} onToggle={onToggle} onQtyChange={onQtyChange} />
+        </div>
       </div>
     </div>
   );
 }
 
 function RateRow({ product, qty, onToggle, onQtyChange }) {
-  const checked = qty > 0;
   return (
     <div className="rate-row">
       <img className="rate-thumb" src={product.img} alt="" loading="lazy" onError={(e) => { e.target.style.opacity = "0.2"; }} />
       <div className="rate-mid">
         <div className="rate-name">{product.name}</div>
         <div className="rate-unit">{product.unit}</div>
-      </div>
-      <div className="rate-price-block">
-        {product.mrp && <div className="card-mrp">{formatRupees(product.mrp)}</div>}
-        <div className="rate-price">{formatRupees(product.price)}</div>
+        <PriceLine product={product} />
       </div>
       <div className="rate-action">
-        {checked ? (
-          <div className="qty-row">
-            <button type="button" className="qty-btn" aria-label={"Decrease quantity of " + product.name} onClick={() => onQtyChange(product.id, qty - 1)}>−</button>
-            <span className="qty-val">{qty}</span>
-            <button type="button" className="qty-btn" aria-label={"Increase quantity of " + product.name} onClick={() => onQtyChange(product.id, qty + 1)}>+</button>
-          </div>
-        ) : (
-          <button type="button" className="add-btn" onClick={() => onToggle(product.id)}>Add</button>
-        )}
+        <AddControl product={product} qty={qty} onToggle={onToggle} onQtyChange={onQtyChange} />
       </div>
+    </div>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="grid" aria-hidden="true">
+      {[0,1,2,3,4,5].map(i => (
+        <div className="skeleton" key={i}>
+          <div className="sk-img" />
+          <div className="sk-line" />
+          <div className="sk-line short" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -645,8 +651,8 @@ function ReviewSheet({ items, total, onRemove, onQtyChange, onClose, onCheckout 
           <span>Total</span>
           <span>{formatRupees(total)}</span>
         </div>
-        <button type="button" className="checkout-btn" style={{ width: "100%", justifyContent: "center", marginTop: "16px" }} onClick={onCheckout}>
-          <WhatsAppIcon /> Proceed on WhatsApp
+        <button type="button" className="checkout-btn" style={{ width: "100%", marginTop: "16px" }} onClick={onCheckout}>
+          <WhatsAppIcon /> Order on WhatsApp
         </button>
       </div>
     </div>
@@ -661,12 +667,18 @@ function Storefront({ products, whatsapp, loading, loadError, onRetry, theme, on
   const [showReview, setShowReview] = useState(false);
   const brandTapCount = useRef(0);
   const brandTapTimer = useRef(null);
+  const listTopRef = useRef(null);
 
   const categories = useMemo(() => {
     const set = [];
     products.forEach(p => { if (!set.includes(p.category)) set.push(p.category); });
     return set;
   }, [products]);
+
+  // if the active category was deleted in admin, fall back to All
+  useEffect(() => {
+    if (activeCategory !== "All" && !categories.includes(activeCategory)) setActiveCategory("All");
+  }, [categories, activeCategory]);
 
   const filtered = useMemo(() => {
     return products.filter(p => {
@@ -712,20 +724,17 @@ function Storefront({ products, whatsapp, loading, loadError, onRetry, theme, on
 
   function handleCheckout() {
     if (selectedItems.length === 0) return;
-    const number = whatsapp;
-    const lines = selectedItems.map((i, idx) => `${idx + 1}. ${i.name} x${i.qty} — ${formatRupees(i.price * i.qty)}`);
+    const lines = selectedItems.map((i, idx) => `${idx + 1}. ${i.name} (${i.unit}) x${i.qty} — ${formatRupees(i.price * i.qty)}`);
     const message = "Hi! I'd like to order the following crackers:\n\n" + lines.join("\n") + `\n\nTotal: ${formatRupees(total)}\n\nPlease confirm availability. Thank you!`;
-    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  function scrollToCategory(cat) {
+  function pickCategory(cat) {
     setActiveCategory(cat);
-    if (cat === "All") { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-    const el = document.getElementById("cat-" + cat.replace(/\s+/g, "-"));
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.pageYOffset - 130;
-      window.scrollTo({ top: y, behavior: "smooth" });
+    if (listTopRef.current) {
+      const y = listTopRef.current.getBoundingClientRect().top + window.pageYOffset - 56;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
     }
   }
 
@@ -741,100 +750,86 @@ function Storefront({ products, whatsapp, loading, loadError, onRetry, theme, on
 
   const ItemComp = view === "grid" ? GridCard : RateRow;
   const itemWrap = view === "grid" ? "grid" : "rate-list";
+  const showSkeleton = loading && products.length === 0;
 
   return (
     <div>
       <header className="topbar">
-        <div className="topbar-row">
-          <button type="button" className="brand-btn" onClick={handleBrandTap} aria-label="Thadaladi Crackers">
-            <span className="brand-name serif">Thadaladi Crackers</span>
-            <span className="brand-sub">Wholesale &amp; retail · Since 1998</span>
-          </button>
-          <div className="topbar-actions">
-            <div className="view-toggle" role="group" aria-label="Layout">
-              <button type="button" className={view === "grid" ? "active" : ""} aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => setView("grid")}><GridIcon /></button>
-              <button type="button" className={view === "list" ? "active" : ""} aria-pressed={view === "list"} aria-label="List view" onClick={() => setView("list")}><ListIcon /></button>
+        <div className="topbar-inner">
+          <div className="topbar-row">
+            <button type="button" className="brand-btn" onClick={handleBrandTap} aria-label="Thadaladi Crackers">
+              <span className="brand-name">Thadaladi Crackers</span>
+              <span className="brand-sub">Wholesale &amp; retail · Since 1998</span>
+            </button>
+            <div className="topbar-actions">
+              <div className="view-toggle" role="group" aria-label="Layout">
+                <button type="button" className={view === "grid" ? "active" : ""} aria-pressed={view === "grid"} aria-label="Grid view" onClick={() => setView("grid")}><GridIcon /></button>
+                <button type="button" className={view === "list" ? "active" : ""} aria-pressed={view === "list"} aria-label="List view" onClick={() => setView("list")}><ListIcon /></button>
+              </div>
+              <ThemeToggle theme={theme} onCycle={onCycleTheme} />
             </div>
-            <ThemeToggle theme={theme} onCycle={onCycleTheme} />
+          </div>
+          <div className="search-row">
+            <span className="search-icon"><SearchIcon /></span>
+            <input type="search" className="search-input" placeholder="Search crackers" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search crackers" />
           </div>
         </div>
       </header>
 
       <div className="rail-wrap">
         <div className="rail">
-          <button type="button" className={"rail-chip" + (activeCategory === "All" ? " active" : "")} onClick={() => scrollToCategory("All")}>All</button>
+          <button type="button" className={"rail-chip" + (activeCategory === "All" ? " active" : "")} onClick={() => pickCategory("All")}>All</button>
           {categories.map(cat => (
-            <button key={cat} type="button" className={"rail-chip" + (activeCategory === cat ? " active" : "")} onClick={() => scrollToCategory(cat)}>{cat}</button>
+            <button key={cat} type="button" className={"rail-chip" + (activeCategory === cat ? " active" : "")} onClick={() => pickCategory(cat)}>{cat}</button>
           ))}
         </div>
       </div>
 
-      <div className="shell">
-        <aside className="sidebar">
-          <div className="sidebar-label">Categories</div>
-          <button type="button" className={"sidebar-item" + (activeCategory === "All" ? " active" : "")} onClick={() => scrollToCategory("All")}>
-            <span>All crackers</span><span className="sidebar-count">{products.length}</span>
-          </button>
-          {categories.map(cat => (
-            <button key={cat} type="button" className={"sidebar-item" + (activeCategory === cat ? " active" : "")} onClick={() => scrollToCategory(cat)}>
-              <span>{cat}</span><span className="sidebar-count">{products.filter(p => p.category === cat).length}</span>
-            </button>
-          ))}
-        </aside>
-
-        <div className="main-col">
-          <main className="page">
-            <div className="search-row">
-              <span className="search-icon"><SearchIcon /></span>
-              <input type="text" className="search-input" placeholder="Search crackers by name…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search crackers" />
-            </div>
-
-            {Object.keys(grouped).length === 0 ? (
-              <div className="empty-state">
-                {loading && products.length === 0 ? (
-                  <div className="serif">Loading crackers…</div>
-                ) : loadError && products.length === 0 ? (
-                  <>
-                    <div className="serif">Couldn't load the catalogue</div>
-                    <div>{loadError}</div>
-                    <button type="button" className="btn btn-primary" onClick={onRetry}>Try again</button>
-                  </>
-                ) : (
-                  <>
-                    <div className="serif">No crackers found</div>
-                    <div>Try a different search term or category.</div>
-                  </>
-                )}
-              </div>
+      <main className="page" ref={listTopRef}>
+        {showSkeleton ? (
+          <SkeletonGrid />
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className="empty-state">
+            {loadError && products.length === 0 ? (
+              <>
+                <div className="serif">Couldn't load the catalogue</div>
+                <div>{loadError}</div>
+                <button type="button" className="btn btn-primary" onClick={onRetry}>Try again</button>
+              </>
             ) : (
-              Object.entries(grouped).map(([cat, items]) => (
-                <section key={cat} id={"cat-" + cat.replace(/\s+/g, "-")}>
-                  <div className="section-head">
-                    <h2 className="section-title">{cat}</h2>
-                    <span className="section-count">{items.length} item{items.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  <div className={itemWrap}>
-                    {items.map(product => (
-                      <ItemComp key={product.id} product={product} qty={selected[product.id] || 0} onToggle={toggle} onQtyChange={setQty} />
-                    ))}
-                  </div>
-                </section>
-              ))
+              <>
+                <div className="serif">No crackers found</div>
+                <div>Try a different search term or category.</div>
+              </>
             )}
-          </main>
-        </div>
-      </div>
+          </div>
+        ) : (
+          Object.entries(grouped).map(([cat, items]) => (
+            <section key={cat} id={"cat-" + cat.replace(/\s+/g, "-")}>
+              <div className="section-head">
+                <h2 className="section-title">{cat}</h2>
+                <span className="section-count">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className={itemWrap}>
+                {items.map(product => (
+                  <ItemComp key={product.id} product={product} qty={selected[product.id] || 0} onToggle={toggle} onQtyChange={setQty} />
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+      </main>
 
       {itemCount > 0 && (
         <div className="checkout-bar">
           <div className="checkout-inner">
             <div className="checkout-meta">
-              <div className="checkout-count">{itemCount} item{itemCount !== 1 ? "s" : ""} selected</div>
+              <div className="checkout-count">{itemCount} item{itemCount !== 1 ? "s" : ""} added</div>
               <div className="checkout-total">{formatRupees(total)}</div>
               <button type="button" className="checkout-view-link" onClick={() => setShowReview(true)}>Review order</button>
             </div>
             <button type="button" className="checkout-btn" onClick={handleCheckout}>
-              <WhatsAppIcon /> Proceed on WhatsApp
+              <WhatsAppIcon /> Order on WhatsApp
             </button>
           </div>
         </div>
@@ -1140,10 +1135,10 @@ function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onR
     <div>
       <header className="admin-header">
         <div className="admin-header-row">
-          <button type="button" className="back-btn" onClick={onBack}>← Back to shop</button>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button type="button" className="back-btn" onClick={onBack}>← Shop</button>
+          <div className="admin-header-actions">
             <ThemeToggle theme={theme} onCycle={onCycleTheme} />
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSettings(true)}>Shop settings</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowSettings(true)}>Settings</button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={onSignOut}>Sign out</button>
           </div>
         </div>
@@ -1151,58 +1146,55 @@ function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onR
 
       <main className="admin-page">
         <h1 className="admin-title">Manage products</h1>
-        <p className="admin-sub">Signed in as {userEmail}. Changes are saved online and appear in the shop for every customer immediately.</p>
+        <p className="admin-sub">Signed in as {userEmail}. Changes show in the shop for every customer immediately.</p>
 
         <div className="admin-toolbar">
-          <select className="plain-select" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
+          <select className="plain-select" value={filterCat} onChange={(e) => setFilterCat(e.target.value)} aria-label="Filter by category">
             <option value="All">All categories ({products.length})</option>
             {categories.map(c => <option key={c} value={c}>{c} ({products.filter(p => p.category === c).length})</option>)}
           </select>
-          <button type="button" className="btn btn-primary" onClick={() => setEditing({})}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><PlusIcon /> Add product</span>
+          <button type="button" className="btn btn-primary btn-add-desktop" onClick={() => setEditing({})}>
+            <PlusIcon /> Add product
           </button>
         </div>
 
         {visible.length === 0 ? (
           <div className="admin-empty">
-            <div style={{ fontSize: "16px", color: "var(--ink)", marginBottom: "6px", fontWeight: 600 }}>No products yet</div>
-            <div style={{ marginBottom: "16px" }}>Add your first cracker to get the shop started.</div>
+            <div style={{ fontSize: "16px", color: "var(--ink)", marginBottom: "6px", fontWeight: 600 }}>No products here</div>
+            <div style={{ marginBottom: "16px" }}>Add a cracker to get the shop started.</div>
             <button type="button" className="btn btn-primary" onClick={() => setEditing({})}>Add product</button>
           </div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr><th>Product</th><th>Category</th><th>Unit</th><th>Price</th><th></th></tr>
-              </thead>
-              <tbody>
-                {visible.map(product => (
-                  <tr key={product.id}>
-                    <td>
-                      <div className="name-cell">
-                        <img className="admin-thumb" src={product.img} alt="" onError={(e) => { e.target.style.opacity = "0.2"; }} />
-                        <span>{product.name}</span>
-                      </div>
-                    </td>
-                    <td><span className="cat-badge">{product.category}</span></td>
-                    <td>{product.unit}</td>
-                    <td className="price-cell">
+          <div className="admin-list">
+            {visible.map(product => (
+              <div className="admin-item" key={product.id}>
+                <div className="admin-item-top">
+                  <img className="admin-thumb" src={product.img} alt="" onError={(e) => { e.target.style.opacity = "0.2"; }} />
+                  <div className="admin-item-info">
+                    <div className="admin-item-name">{product.name}</div>
+                    <div className="admin-item-meta">
+                      <span className="cat-badge">{product.category}</span>
+                      <span>{product.unit}</span>
+                    </div>
+                    <div className="admin-item-price">
+                      <strong>{formatRupees(product.price)}</strong>
                       {product.mrp && <span className="card-mrp">{formatRupees(product.mrp)}</span>}
-                      {formatRupees(product.price)}
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(product)}>Edit</button>
-                        <button type="button" className="btn btn-danger btn-sm" onClick={() => setDeleting(product)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </div>
+                <div className="admin-item-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(product)}>Edit</button>
+                  <button type="button" className="btn btn-danger btn-sm" onClick={() => setDeleting(product)}>Delete</button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </main>
+
+      <button type="button" className="btn btn-primary admin-fab" onClick={() => setEditing({})} aria-label="Add product">
+        <PlusIcon /> Add product
+      </button>
 
       {editing !== null && (
         <ProductFormModal initial={editing.id ? editing : null} categories={categories} onCancel={() => setEditing(null)} onSave={handleSave} />
