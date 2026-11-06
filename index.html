@@ -12,6 +12,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
     --bg: #F1F3F6;
@@ -411,6 +413,394 @@
   .field input[type="file"] { padding: 8px; font-size: 13px; }
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .empty-state .btn { margin-top: 14px; }
+
+  /* ---- private cloud billing ---- */
+  .admin-tabs { display:flex; gap:6px; margin:0 0 18px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+  .admin-tab { background:transparent; color:var(--muted); border:1px solid var(--line); padding:11px 18px; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  .admin-tab.active { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .billing-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; }
+  .bill-head-buttons { display:flex; gap:7px; flex-wrap:wrap; }
+  .bill-panel { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:14px; }
+  .bill-panel h3 { font-size:16px; margin:0 0 16px; }
+  .bill-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 14px; }
+  .bill-span { grid-column:1/-1; }
+  .bill-add-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .bill-add-row select.plain-select { flex:1 1 250px; }
+  .bill-lines { display:grid; gap:8px; }
+  .bill-line { padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+  .bill-line-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:13px; }
+  .bill-line-fields { display:grid; grid-template-columns: 2fr 1fr 0.65fr 1fr auto; align-items:end; gap:8px; }
+  .bill-line-fields .field { margin:0; }
+  .bill-line-amount { font-size:14px; font-weight:800; padding:0 3px 14px; white-space:nowrap; }
+  .bill-totals { margin-left:auto; width:min(100%,370px); }
+  .bill-totals > div { display:flex; justify-content:space-between; gap:12px; padding:8px 0; font-size:14px; }
+  .bill-totals .bill-grand { font-size:21px; font-weight:800; color:var(--accent); border-top:2px solid var(--accent); margin-top:4px; }
+  .bill-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .bill-stats>div { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:13px; display:flex; flex-direction:column; gap:7px; }
+  .bill-stats span { font-size:12px; color:var(--muted); }
+  .bill-stats strong { font-size:19px; overflow-wrap:anywhere; }
+  .bill-history { display:grid; gap:10px; }
+  .bill-history-item { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px; display:grid; grid-template-columns:1fr auto; gap:10px; }
+  .bill-history-info>strong { color:var(--accent); }
+  .bill-history-info>div { margin-top:5px; font-size:13px; }
+  .bill-history-total { font-size:18px; font-weight:800; }
+  .bill-history-actions { grid-column:1/-1; display:flex; gap:8px; flex-wrap:wrap; }
+  .bill-history-actions .btn { min-height:36px; }
+  .bill-notice { background:var(--surface); color:var(--good); border:1px solid var(--good); border-radius:8px; padding:12px; font-size:13px; margin-bottom:12px; overflow-wrap:anywhere; }
+  @media (max-width:680px) {
+    .bill-form-grid { grid-template-columns:1fr; }
+    .bill-line-fields { grid-template-columns:repeat(2,1fr); }
+    .bill-line-fields .field:first-child { grid-column:1/-1; }
+    .bill-line-amount { grid-column:1/-1; padding:8px 2px 0; text-align:right; }
+    .bill-stats { grid-template-columns:1fr 1fr; }
+    .bill-stats>div:last-child { grid-column:1/-1; }
+    .bill-history-item { grid-template-columns:1fr; }
+    .bill-history-total { grid-row:2; }
+  }
+
+  /* POS-style admin billing: no product image list, mobile and tablet first. */
+  .admin-page-billing { max-width: 1280px; }
+  .bill-editor { width:100%; min-width:0; }
+  .bill-editor .billing-head { align-items:flex-start; }
+  .bill-editor .admin-title { font-size:clamp(19px,2.4vw,25px); }
+  .bill-editor .admin-sub { max-width:690px; }
+  .bill-editor .bill-panel { min-width:0; padding:18px; }
+  .bill-editor .bill-panel h3 { margin-bottom:12px; }
+  .bill-section-caption { font-size:12px; color:var(--muted); font-weight:600; }
+  .bill-customer-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+  .bill-customer-grid .field { margin:0; min-width:0; }
+  .bill-customer-grid .field input,.bill-customer-grid .field textarea { min-width:0; width:100%; min-height:44px; }
+  .bill-customer-grid .bill-customer-address { grid-column:1/-1; }
+  .bill-customer-grid .bill-customer-address textarea { resize:vertical; min-height:58px; }
+  .bill-product-search { position:relative; z-index:9; }
+  .bill-product-search label { display:block; font-size:13px; font-weight:750; margin-bottom:8px; }
+  .bill-search-field { position:relative; }
+  .bill-search-field input { display:block; width:100%; min-height:52px; border:1.5px solid var(--line); background:var(--surface); color:var(--ink); border-radius:9px; font-size:16px; padding:11px 44px; }
+  .bill-search-field input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .bill-search-icon { position:absolute; width:20px; height:20px; top:16px; left:14px; color:var(--muted); pointer-events:none; }
+  .bill-search-icon svg { width:100%; height:100%; }
+  .bill-search-clear { position:absolute; right:8px; top:7px; height:38px; width:38px; border:0; background:none; border-radius:8px; color:var(--muted); cursor:pointer; font-size:19px; }
+  .bill-search-clear:hover { background:var(--surface-2); }
+  .bill-search-results { position:absolute; z-index:40; left:0; right:0; top:calc(100% + 6px); max-height:min(390px,50vh); overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:11px; background:var(--surface); box-shadow:0 12px 28px rgba(0,0,0,.18); }
+  .bill-result-row { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-height:56px; text-align:left; padding:9px 13px; color:var(--ink); background:var(--surface); border:0; border-bottom:1px solid var(--line); cursor:pointer; }
+  .bill-result-row:last-child { border-bottom:0; }
+  .bill-result-row:hover,.bill-result-row:focus-visible,.bill-result-row.active { background:var(--accent-wash); outline:none; }
+  .bill-result-name { min-width:0; flex:1; }
+  .bill-result-name strong { display:block; font-size:14px; line-height:1.35; overflow-wrap:anywhere; }
+  .bill-result-name span { display:block; margin-top:3px; font-size:11.5px; color:var(--muted); }
+  .bill-result-price { flex-shrink:0; text-align:right; font-size:14px; font-weight:800; }
+  .bill-result-price small { display:block; margin-top:3px; font-size:10.5px; color:var(--good); font-weight:650; }
+  .bill-search-empty { font-size:13px; color:var(--muted); padding:18px; }
+  .bill-search-tip { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; color:var(--muted); margin-top:9px; }
+  .bill-search-tip strong { color:var(--ink); font-weight:700; }
+  .bill-items-panel { overflow:visible; }
+  .bill-items-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .bill-items-heading h3 { margin:0 !important; }
+  .bill-items-heading .btn { min-height:39px; }
+  .bill-empty-cart { text-align:center; padding:34px 12px; border:1px dashed var(--line); background:var(--bg); border-radius:10px; color:var(--muted); font-size:14px; }
+  .bill-empty-cart strong { display:block; color:var(--ink); margin-bottom:5px; font-size:16px; }
+  .bill-table-header,.bill-entry { display:grid; grid-template-columns: 35px minmax(185px,2fr) minmax(90px,.6fr) minmax(132px,.95fr) minmax(112px,.85fr) minmax(108px,.8fr) 38px; gap:9px; align-items:center; }
+  .bill-table-header { background:var(--surface-2); border:1px solid var(--line); border-bottom:none; padding:10px; border-radius:9px 9px 0 0; font-size:11.5px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.025em; }
+  .bill-table-header span:nth-child(6) { text-align:right; }
+  .bill-entry { position:relative; padding:10px; border:1px solid var(--line); border-top:0; background:var(--surface); }
+  .bill-entry:last-child { border-radius:0 0 9px 9px; }
+  .bill-entry-index { font-size:12px; font-weight:700; color:var(--muted); }
+  .bill-entry .field { margin:0; min-width:0; }
+  .bill-entry .field label { display:none; }
+  .bill-entry .field input { width:100%; min-width:0; min-height:40px; border-radius:6px; padding:8px 9px; font-size:14px; }
+  .bill-entry .bill-entry-name input { font-weight:650; }
+  .bill-entry .bill-entry-qty .bill-qty-control { display:flex; width:100%; border:1px solid var(--line); background:var(--surface); border-radius:7px; overflow:hidden; }
+  .bill-entry .bill-qty-control button { flex:0 0 32px; border:0; background:var(--surface-2); color:var(--ink); font-size:18px; font-weight:800; cursor:pointer; }
+  .bill-entry .bill-qty-control button:disabled { opacity:.4; cursor:default; }
+  .bill-entry .bill-qty-control input { min-width:0; flex:1; width:35px; text-align:center; min-height:38px; height:38px; border:0; border-left:1px solid var(--line); border-right:1px solid var(--line); border-radius:0; padding:3px 0; -moz-appearance:textfield; }
+  .bill-qty-control input::-webkit-inner-spin-button,.bill-qty-control input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  .bill-entry-amount { font-size:14px; font-weight:850; text-align:right; overflow-wrap:anywhere; }
+  .bill-entry-amount .bill-mobile-label { display:none; }
+  .bill-item-remove { border:0; background:none; color:var(--accent); width:36px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:7px; }
+  .bill-item-remove:hover { background:var(--accent-wash); }
+  .bill-item-remove svg { width:18px; height:18px; }
+  .bill-summary-layout { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(275px,.75fr); gap:18px; align-items:start; }
+  .bill-summary-layout .field { margin-bottom:12px; }
+  .bill-payment-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 12px; }
+  .bill-payment-grid .field { min-width:0; }
+  .bill-payment-grid .field input,.bill-payment-grid .field select { width:100%; min-width:0; }
+  .bill-payment-grid .bill-note { grid-column:1/-1; }
+  .bill-summary-total { background:var(--bg); border:1px solid var(--line); padding:14px 16px; border-radius:10px; }
+  .bill-summary-total .bill-totals { width:100%; }
+  .bill-summary-total .bill-grand { font-size:clamp(18px,2.4vw,23px); }
+  .bill-editor-actions { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 8px; }
+  .bill-editor-actions .btn { flex:1 1 200px; min-height:50px; }
+  .bill-saving-note { font-size:12px; color:var(--muted); margin:12px 0 10px; }
+  @media (max-width:1130px) {
+    .bill-table-header,.bill-entry { grid-template-columns:27px minmax(145px,2fr) minmax(62px,.6fr) minmax(120px,.95fr) minmax(94px,.75fr) minmax(92px,.8fr) 30px; gap:7px; }
+    .bill-entry,.bill-table-header { padding:8px; }
+    .bill-entry .bill-qty-control button { flex-basis:27px; }
+  }
+  @media (max-width:900px) {
+    .bill-customer-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .bill-table-header { display:none; }
+    .bill-table-body { display:grid; gap:10px; }
+    .bill-entry { border:1px solid var(--line); border-radius:10px !important; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:13px; align-items:end; }
+    .bill-entry-index { position:absolute; top:9px; right:57px; }
+    .bill-entry .field label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; }
+    .bill-entry-name { grid-column:1/-1; padding-right:68px; }
+    .bill-entry-unit { grid-column:1; }
+    .bill-entry-qty { grid-column:2; }
+    .bill-entry-rate { grid-column:3; }
+    .bill-entry-amount { grid-column:4; padding-bottom:8px; }
+    .bill-entry-amount .bill-mobile-label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:8px; }
+    .bill-item-remove { position:absolute; right:10px; top:7px; }
+    .bill-summary-layout { grid-template-columns:1fr; }
+  }
+  @media (max-width:600px) {
+    .admin-page.admin-page-billing { padding:12px 10px 110px; }
+    .admin-tabs { gap:6px; }
+    .admin-tab { flex:1; padding:10px 8px; font-size:13px; }
+    .bill-editor .billing-head { gap:8px; }
+    .bill-editor .bill-panel { padding:13px; margin-bottom:11px; }
+    .bill-editor .bill-panel h3 { font-size:15px; }
+    .bill-customer-grid { gap:10px; }
+    .bill-customer-grid .field label { font-size:11.5px; }
+    .bill-customer-grid .field input,.bill-customer-grid .field textarea { min-height:44px; }
+    .bill-search-field input { min-height:50px; }
+    .bill-result-row { min-height:55px; }
+    .bill-search-tip { align-items:flex-start; }
+    .bill-entry { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .bill-entry-name { grid-column:1/-1; }
+    .bill-entry-unit { grid-column:1; }
+    .bill-entry-qty { grid-column:2; }
+    .bill-entry-rate { grid-column:1; }
+    .bill-entry-amount { grid-column:2; }
+    .bill-entry .field input { min-height:44px; font-size:16px; }
+    .bill-entry .bill-qty-control input { min-height:42px; height:42px; }
+    .bill-entry .bill-qty-control button { flex-basis:33px; }
+    .bill-editor-actions { position:static; padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px)); margin:12px 0 0; border-top:1px solid var(--line); }
+    .bill-editor-actions .btn { flex:1 1 140px; min-height:47px; padding:8px; font-size:13px; }
+    .bill-payment-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .bill-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .bill-history-actions .btn { flex:1 1 115px; }
+  }
+  @media (max-width:380px) {
+    .bill-customer-grid { grid-template-columns:1fr; }
+    .bill-payment-grid { grid-template-columns:1fr; }
+    .bill-editor-actions { flex-direction:column; }
+    .bill-editor-actions .btn { width:100%; flex:0 0 auto; }
+    .bill-head-buttons { width:100%; }
+    .bill-head-buttons .btn { flex:1; }
+  }
+
+  /* v4: compact, customer-free counter billing. */
+  .bill-editor-top { gap:16px; align-items:center !important; }
+  .bill-date-actions { display:flex; align-items:flex-end; flex-wrap:wrap; gap:10px; }
+  .bill-date-field { margin:0; min-width:155px; }
+  .bill-date-field label { display:block; margin-bottom:5px; font-size:12px; color:var(--muted);font-weight:700; }
+  .bill-date-field input { background:var(--surface); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:9px; min-height:40px; font-size:14px; max-width:100%; }
+  .bill-date-actions .btn { min-height:40px; }
+  .bill-table-header,.bill-entry { grid-template-columns:28px minmax(140px,2fr) minmax(65px,.63fr) minmax(110px,.9fr) minmax(84px,.7fr) minmax(84px,.7fr) minmax(100px,.85fr) minmax(97px,.8fr) 34px; gap:8px; }
+  .bill-table-header span:nth-child(7), .bill-table-header span:nth-child(8) { text-align:right; }
+  .bill-entry-saving { text-align:right; font-size:13px; line-height:1.35; overflow-wrap:anywhere; }
+  .bill-entry-saving strong { color:var(--good); font-weight:800; }
+  .bill-entry-saving small { display:block; color:var(--good); font-size:11px; margin-top:4px; }
+  .bill-entry-saving .bill-mobile-label { display:none; }
+  .bill-muted-value { color:var(--muted); }
+  .bill-mrp-hint { font-size:11.5px; color:var(--muted); line-height:1.5; margin:10px 0 0; }
+  .bill-totals .bill-saving-row strong,.bill-totals .bill-saving-row span { color:var(--good); }
+  .bill-totals .bill-total-savings { border-top:1px dashed var(--line); color:var(--good); font-weight:800; padding-top:11px; margin-top:4px; }
+  .bill-totals .bill-grand { padding-top:12px; }
+  @media (max-width:1150px) {
+    .bill-table-header,.bill-entry { grid-template-columns:24px minmax(135px,1.7fr) minmax(50px,.55fr) minmax(104px,.8fr) minmax(80px,.67fr) minmax(80px,.67fr) minmax(88px,.7fr) minmax(90px,.72fr) 30px; gap:6px; }
+  }
+  @media (max-width:1050px) {
+    .bill-table-header { display:none; }
+    .bill-table-body { display:grid; gap:10px; }
+    .bill-entry { position:relative; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; border:1px solid var(--line); border-radius:10px!important; padding:13px; align-items:end; }
+    .bill-entry-index { position:absolute; top:13px; right:56px; }
+    .bill-entry .field label { display:block; font-size:11px; font-weight:750; color:var(--muted); margin-bottom:5px; }
+    .bill-entry-name { grid-column:1/-1; padding-right:65px; }
+    .bill-entry-unit { grid-column:1; }
+    .bill-entry-qty { grid-column:2; }
+    .bill-entry-mrp { grid-column:3; }
+    .bill-entry-rate { grid-column:4; }
+    .bill-entry-saving { grid-column:3; text-align:right; align-self:center; padding-top:6px; }
+    .bill-entry-amount { grid-column:4; text-align:right; padding-top:6px; padding-bottom:0; }
+    .bill-entry-saving .bill-mobile-label, .bill-entry-amount .bill-mobile-label { display:block; font-size:11px; font-weight:750; color:var(--muted); margin-bottom:5px; }
+    .bill-item-remove { position:absolute; right:9px; top:7px; }
+    .bill-summary-layout { grid-template-columns:1fr; }
+  }
+  @media (max-width:600px) {
+    .bill-editor-top { flex-direction:column; align-items:stretch!important; }
+    .bill-date-actions { justify-content:space-between; }
+    .bill-date-actions .btn { flex:0 0 auto; }
+    .bill-entry { grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; }
+    .bill-entry-name { grid-column:1/-1; }
+    .bill-entry-unit { grid-column:1; }
+    .bill-entry-qty { grid-column:2; }
+    .bill-entry-mrp { grid-column:1; }
+    .bill-entry-rate { grid-column:2; }
+    .bill-entry-saving { grid-column:1; text-align:left; padding-top:5px; }
+    .bill-entry-amount { grid-column:2; padding-top:5px; }
+    .bill-result-row { gap:8px; }
+    .bill-result-price { font-size:13px; max-width:49%; }
+    .bill-result-price small { font-size:10px; line-height:1.4; white-space:normal; }
+    .bill-summary-total { padding:12px; }
+  }
+  @media (max-width:380px) {
+    .bill-date-actions { flex-wrap:wrap; }
+    .bill-entry-qty .bill-qty-control button { flex-basis:28px; }
+  }
+
+
+/* ===== v5: touch-first point-of-sale bill editor only; all other screens untouched ===== */
+.pos-editor { width:100%; }
+.pos-editor input, .pos-editor button { font-family:inherit; }
+.pos-editor button { touch-action:manipulation; }
+.pos-topbar { display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px; }
+.pos-topbar .admin-title { margin:0 0 3px; font-size:clamp(20px,2vw,25px); }
+.pos-topbar .admin-sub { margin:0; }
+.pos-top-actions { display:flex;align-items:end;gap:10px;flex-wrap:wrap; }
+.pos-date-control { display:flex;flex-direction:column;gap:5px; }
+.pos-date-control label { font-size:11px;color:var(--muted);font-weight:700; }
+.pos-date-control input { height:42px;padding:6px 10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:14px; }
+.pos-workspace { display:grid;grid-template-columns:minmax(290px,.88fr) minmax(0,1.18fr);align-items:start;gap:14px; }
+.pos-catalogue,.pos-ticket { background:var(--surface);border:1px solid var(--line);border-radius:13px;min-width:0;box-shadow:var(--shadow); }
+.pos-catalogue { padding:15px; }
+.pos-panel-title { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px; }
+.pos-panel-title h3,.pos-ticket-header h3 { margin:0;font-size:17px;font-weight:800; }
+.pos-panel-title span { color:var(--muted);font-size:12px; }
+.pos-search-field { position:relative; }
+.pos-search-field input { width:100%;height:51px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-size:16px;padding:0 39px 0 42px; }
+.pos-search-field input:focus { outline:2px solid var(--accent);outline-offset:1px; }
+.pos-search-field>span { position:absolute;top:15px;left:13px;width:20px;height:20px;color:var(--muted);pointer-events:none; }
+.pos-search-field>span svg {width:20px;height:20px;}
+.pos-clear-search { position:absolute;right:6px;top:5px;width:38px;height:40px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:23px; }
+.pos-category-rail { display:flex;align-items:center;gap:7px;overflow-x:auto;scrollbar-width:thin;padding:14px 0 12px; }
+.pos-category-rail button { flex:0 0 auto;min-height:36px;border-radius:20px;border:1px solid var(--line);background:var(--surface);padding:6px 12px;color:var(--ink);font-size:12px;font-weight:700;white-space:nowrap; }
+.pos-category-rail button.active { background:var(--accent);border-color:var(--accent);color:var(--accent-ink); }
+.pos-catalogue-list { max-height:min(62dvh,680px);overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:10px; }
+.pos-product { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:12px;border-bottom:1px solid var(--line);background:var(--surface); }
+.pos-product:last-child { border-bottom:0; }
+.pos-product-selected { background:var(--accent-wash); }
+.pos-product-info { grid-column:1;min-width:0; }
+.pos-product-info strong { display:block;font-size:13.5px;line-height:1.35;overflow-wrap:anywhere; }
+.pos-product-info span { display:block;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.35; }
+.pos-product-price { grid-column:1;display:flex;flex-direction:column;gap:2px; }
+.pos-product-price strong { font-size:15px;font-weight:850; }
+.pos-product-price small { font-size:10.5px;color:var(--good);line-height:1.35; }
+.pos-product-add,.pos-qty {grid-column:2;grid-row:1/span 2;}
+.pos-product-add { border-radius:8px;min-height:43px;min-width:75px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-size:13px;font-weight:800;cursor:pointer; }
+.pos-catalogue-hint { color:var(--muted);font-size:11.5px;margin-top:12px;line-height:1.45; }
+.pos-empty-list {text-align:center;padding:33px 10px;color:var(--muted);font-size:13px;}
+.pos-qty { display:flex;align-items:stretch;min-width:122px;height:41px;border-radius:8px;border:1px solid var(--line);overflow:hidden; }
+.pos-qty button { min-width:37px;border:0;background:var(--surface-2);color:var(--ink);font-weight:800;font-size:22px;cursor:pointer; }
+.pos-qty button:disabled {opacity:.4;cursor:default;}
+.pos-qty span,.pos-qty input { display:flex;align-items:center;justify-content:center;text-align:center;flex:1;min-width:30px;width:40px;height:100%;margin:0;padding:0 2px;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0;background:var(--surface);color:var(--ink);font-size:15px;font-weight:800;-moz-appearance:textfield; }
+.pos-qty input::-webkit-inner-spin-button,.pos-qty input::-webkit-outer-spin-button {-webkit-appearance:none;margin:0;}
+.pos-qty-small { min-width:110px;height:40px; }
+.pos-qty-small button {min-width:33px;}
+.pos-ticket-header { display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 16px 14px;border-bottom:1px solid var(--line); }
+.pos-ticket-header h3 span { background:var(--surface-2);color:var(--muted);border-radius:13px;padding:4px 8px;font-size:11px;vertical-align:middle;margin-left:3px; }
+.pos-ticket-header p { font-size:11.5px;color:var(--muted);margin:6px 0 0; }
+.pos-ticket-actions {display:flex;gap:5px;flex-wrap:wrap;}
+.pos-ticket-actions button { border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;font-size:12px;font-weight:750;min-height:38px;padding:6px 10px; }
+.pos-ticket-actions .pos-clear-bill { color:var(--accent); }
+.pos-ticket-empty { min-height:210px;display:flex;align-items:center;justify-content:center;gap:10px;flex-direction:column;text-align:center;padding:35px 15px; }
+.pos-ticket-empty strong {font-size:16px;}
+.pos-ticket-empty span {color:var(--muted);font-size:13px;}
+.pos-empty-symbol {font-size:32px;color:var(--accent);font-weight:400;background:var(--accent-wash);border-radius:50%;width:52px;height:52px;display:grid;place-items:center;}
+.pos-ticket-empty button { border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:7px;padding:10px 14px;font-weight:700;margin-top:5px; }
+.pos-ticket-lines {max-height:min(46dvh,500px);overflow-y:auto;overscroll-behavior:contain;}
+.pos-ticket-line { padding:12px 14px;border-bottom:1px solid var(--line); }
+.pos-line-top { display:flex;align-items:flex-start;gap:8px; }
+.pos-line-index { color:var(--muted);font-size:11px;min-width:14px;padding-top:2px; }
+.pos-line-name {min-width:0;flex:1;}
+.pos-line-name strong {display:block;font-size:13px;overflow-wrap:anywhere;line-height:1.4;}
+.pos-line-name span {display:block;color:var(--muted);font-size:11px;margin-top:3px;}
+.pos-line-side {flex:0 0 auto;text-align:right;}
+.pos-line-side b {font-size:14px;white-space:nowrap;}
+.pos-line-side small {display:block;color:var(--good);font-size:10.5px;margin-top:4px;}
+.pos-line-remove {width:30px;height:30px;border:0;background:transparent;border-radius:6px;color:var(--accent);cursor:pointer;display:grid;place-items:center;flex:0 0 30px;}
+.pos-line-remove svg {width:17px;height:17px;}
+.pos-line-controls {display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:11px 0 0 22px;}
+.pos-line-rate {display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;color:var(--muted);font-weight:700;}
+.pos-line-rate input {width:94px;height:41px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font-size:15px;font-weight:700;padding:7px;}
+.pos-edit-toggle {color:var(--accent);font-size:12px;font-weight:800;border:1px solid var(--line);background:var(--surface);border-radius:7px;height:41px;padding:5px 10px;cursor:pointer;}
+.pos-edit-fields { display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.7fr) minmax(0,.8fr);gap:9px;background:var(--bg);padding:11px;margin:12px 0 0 22px;border-radius:8px;border:1px solid var(--line); }
+.pos-edit-fields label,.pos-extras label {color:var(--muted);display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:750;min-width:0;}
+.pos-edit-fields input,.pos-extras input {width:100%;min-width:0;min-height:39px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);padding:8px;font-size:14px;}
+.pos-ticket-bottom {padding:12px 16px 16px;background:var(--surface);}
+.pos-bill-summary>div {display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:12.5px;padding:5px 0;}
+.pos-bill-summary span {color:var(--muted);}
+.pos-bill-summary b {font-size:12.5px;white-space:nowrap;}
+.pos-bill-summary .pos-saving span,.pos-bill-summary .pos-saving b {color:var(--good);}
+.pos-bill-summary .pos-total {border-top:1px dashed var(--line);padding:11px 0 8px;margin-top:4px;}
+.pos-bill-summary .pos-total span {color:var(--ink);font-weight:800;font-size:14px;}
+.pos-bill-summary .pos-total strong {color:var(--accent);font-size:23px;white-space:nowrap;}
+.pos-bill-summary .pos-total-savings {padding:5px 0 10px;}
+.pos-extras-toggle {margin:6px 0 12px;border:0;background:transparent;color:var(--accent);font-size:11.5px;font-weight:800;cursor:pointer;padding:5px 0;}
+.pos-extras {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px;}
+.pos-extras .pos-note {grid-column:1/-1;}
+.pos-save-actions {display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:8px;}
+.pos-save-actions button {min-height:49px;border-radius:8px;font-size:12.5px;font-weight:800;padding:8px;cursor:pointer;}
+.pos-save-main {border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);}
+.pos-save-secondary {border:1px solid var(--line);background:var(--surface);color:var(--ink);}
+.pos-save-actions button:disabled,.pos-product-add:disabled {opacity:.55;cursor:not-allowed;}
+.pos-save-caption {font-size:10.5px;color:var(--muted);line-height:1.5;margin:9px 0 0;}
+.pos-mobile-tabs,.pos-mobile-bottom {display:none;}
+@media (max-width:1030px) {
+  .pos-workspace {grid-template-columns:minmax(270px,.87fr) minmax(0,1.13fr);gap:10px;}
+  .pos-catalogue {padding:12px;}
+  .pos-product {padding:10px;gap:5px 7px;}
+  .pos-qty-small {min-width:100px;}
+  .pos-qty-small button {min-width:29px;}
+  .pos-line-top {gap:5px;}
+  .pos-ticket-header,.pos-ticket-bottom {padding-left:12px;padding-right:12px;}
+  .pos-ticket-line {padding-left:10px;padding-right:10px;}
+  .pos-line-controls {margin-left:16px;gap:6px;}
+  .pos-line-rate input {width:76px;}
+  .pos-qty {min-width:106px;}
+  .pos-qty button {min-width:30px;}
+  .pos-edit-fields {margin-left:16px;grid-template-columns:repeat(2,minmax(0,1fr));}
+  .pos-edit-fields label:first-child {grid-column:1/-1;}
+}
+@media (max-width:719px) {
+  .admin-page.admin-page-billing {padding:12px 10px 120px;}
+  .pos-topbar {align-items:flex-start;gap:10px;margin-bottom:13px;}
+  .pos-top-actions {width:100%;justify-content:space-between;}
+  .pos-date-control input {height:39px;}
+  .pos-mobile-tabs {display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0;}
+  .pos-mobile-tabs button {height:45px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;font-size:13px;font-weight:800;}
+  .pos-mobile-tabs button.active {color:var(--accent);border-color:var(--accent);background:var(--accent-wash);}
+  .pos-mobile-tabs span {padding:2px 7px;background:var(--surface-2);border-radius:20px;font-size:11px;}
+  .pos-workspace {display:block;}
+  .pos-catalogue,.pos-ticket {display:none;}
+  .pos-workspace .pos-visible-mobile {display:block;}
+  .pos-catalogue-list {max-height:none;min-height:160px;overflow:visible;}
+  .pos-catalogue {padding:12px;}
+  .pos-ticket-lines {max-height:none;overflow:visible;}
+  .pos-ticket-bottom {padding-bottom:20px;}
+  .pos-editor:has(.pos-mobile-bottom) {padding-bottom:75px;}
+  .pos-mobile-bottom {display:flex;position:fixed;z-index:48;bottom:0;left:0;right:0;background:var(--surface);color:var(--ink);box-shadow:0 -4px 16px rgba(0,0,0,.12);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));align-items:center;justify-content:space-between;gap:12px;}
+  .pos-mobile-bottom div {display:flex;flex-direction:column;gap:3px;}
+  .pos-mobile-bottom small {color:var(--muted);font-size:11px;}
+  .pos-mobile-bottom b {font-size:20px;}
+  .pos-mobile-bottom button {min-height:46px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:7px 22px;font-weight:800;font-size:14px;}
+  .pos-save-actions button {min-height:50px;font-size:12px;}
+  .pos-date-control input,.pos-line-rate input,.pos-edit-fields input,.pos-extras input,.pos-qty input {font-size:16px;}
+}
+@media (max-width:390px) {
+  .pos-topbar .admin-sub {font-size:11px;}
+  .pos-product {gap:7px;}
+  .pos-product-info strong {font-size:12.5px;}
+  .pos-product-add {min-width:60px;}
+  .pos-qty-small {min-width:93px;}
+  .pos-qty-small button {min-width:27px;}
+  .pos-line-top {flex-wrap:wrap;}
+  .pos-line-side {margin-left:auto;}
+  .pos-line-controls {margin-left:0;}
+  .pos-edit-fields {margin-left:0;}
+  .pos-save-actions {grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
@@ -1008,6 +1398,516 @@ function LoginGate({ onSuccess, onCancel }) {
   );
 }
 
+/* ================= cloud billing ================= */
+
+const INVOICE_BUCKET = 'invoice-pdfs';
+const SHOP_DEFAULTS = { shop_name: 'Velan Crackers', shop_phone: '+91 96002 09256 / +91 93841 72262', shop_address: '' };
+const roundMoney = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+const invoiceCurrency = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const safeHtml = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const dateLocal = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-'); };
+
+async function getBillingOwner() {
+  const { data, error } = await sb.auth.getUser();
+  if (error || !data || !data.user) throw new Error('Please sign in again to manage bills.');
+  return data.user.id;
+}
+
+function lineMrp(item) {
+  const mrp = Number(item.unit_mrp);
+  return item.unit_mrp !== null && item.unit_mrp !== '' && Number.isFinite(mrp) && mrp > 0 ? mrp : null;
+}
+function calculateBill(lines, discount, delivery) {
+  const subtotal = roundMoney(lines.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0));
+  // Unknown MRP is NOT counted as a saving; compare against the selling rate instead.
+  const mrp_total = roundMoney(lines.reduce((sum, item) => sum + Number(item.quantity || 0) * (lineMrp(item) ?? Number(item.unit_price || 0)), 0));
+  const product_savings = roundMoney(lines.reduce((sum, item) => sum + Number(item.quantity || 0) * Math.max(0, (lineMrp(item) ?? Number(item.unit_price || 0)) - Number(item.unit_price || 0)), 0));
+  const discount_amount = roundMoney(Math.max(0, Number(discount) || 0));
+  const delivery_amount = roundMoney(Math.max(0, Number(delivery) || 0));
+  return { subtotal, mrp_total, product_savings, discount_amount, delivery_amount,
+    total_savings: roundMoney(product_savings + discount_amount),
+    grand_total: roundMoney(Math.max(0, subtotal - discount_amount + delivery_amount)) };
+}
+
+function invoicePageHtml(bill, profile, pageItems, pageNo, pageCount) {
+  const maxRows = 11;
+  const itemsStart = (pageNo - 1) * maxRows;
+  const summary = calculateBill(Array.isArray(bill.items) ? bill.items : [], bill.discount_amount, bill.delivery_amount);
+  const rows = pageItems.map((item, i) => {
+    const qty = Number(item.quantity || 0);
+    const rate = Number(item.unit_price || 0);
+    const mrp = lineMrp(item);
+    const saved = roundMoney(qty * Math.max(0, (mrp ?? rate) - rate));
+    return `<tr>
+      <td style="padding:10px 5px;border-bottom:1px solid #eee;overflow-wrap:anywhere">${itemsStart+i+1}. ${safeHtml(item.name)}${item.unit ? '<div style="font-size:10px;color:#666">'+safeHtml(item.unit)+'</div>' : ''}</td>
+      <td style="text-align:center;padding:10px 4px;border-bottom:1px solid #eee">${qty}</td>
+      <td style="text-align:right;padding:10px 4px;border-bottom:1px solid #eee;white-space:nowrap">${mrp === null ? '—' : invoiceCurrency(mrp)}</td>
+      <td style="text-align:right;padding:10px 4px;border-bottom:1px solid #eee;white-space:nowrap">${invoiceCurrency(rate)}</td>
+      <td style="text-align:right;padding:10px 4px;border-bottom:1px solid #eee;white-space:nowrap;color:#167c36">${mrp === null ? '—' : invoiceCurrency(saved)}</td>
+      <td style="text-align:right;padding:10px 4px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:700">${invoiceCurrency(roundMoney(rate * qty))}</td>
+      </tr>`;
+  }).join('');
+  const isFirst = pageNo === 1;
+  const isLast = pageNo === pageCount;
+  const details = isFirst ? `<div style="display:flex;justify-content:space-between;gap:14px;margin:22px 0 16px;font-size:13px">
+    <div style="color:#555">Retail sales bill · No GST</div>
+    <div style="text-align:right"><b>Bill No:</b> ${safeHtml(bill.invoice_number)}<br/><b>Date:</b> ${safeHtml(bill.invoice_date)}<br/>
+    <b>Payment:</b> ${safeHtml(bill.payment_status === 'paid' ? 'Paid' : 'Unpaid')}<br/><b>Method:</b> ${safeHtml(bill.payment_method || 'Not specified')}</div>
+    </div>` : `<div style="margin:20px 0 12px;color:#777;font-size:13px">Bill ${safeHtml(bill.invoice_number)} — continued</div>`;
+  const totals = isLast ? `<div style="display:flex;justify-content:flex-end;margin-top:18px"><table style="width:360px;font-size:13px;border-collapse:collapse">
+    <tr><td style="padding:6px">Listed value (MRP where known)</td><td style="text-align:right">${invoiceCurrency(summary.mrp_total)}</td></tr>
+    <tr><td style="padding:6px;color:#167c36">Saved vs MRP on products</td><td style="text-align:right;color:#167c36">− ${invoiceCurrency(summary.product_savings)}</td></tr>
+    <tr><td style="padding:6px">Selling price subtotal</td><td style="text-align:right">${invoiceCurrency(bill.subtotal)}</td></tr>
+    <tr><td style="padding:6px">Extra bill discount</td><td style="text-align:right">− ${invoiceCurrency(bill.discount_amount)}</td></tr>
+    <tr><td style="padding:6px">Delivery / other</td><td style="text-align:right">${invoiceCurrency(bill.delivery_amount)}</td></tr>
+    <tr style="border-top:2px solid #D7261E"><td style="padding:11px 7px;font-size:17px;font-weight:800">TOTAL</td><td style="text-align:right;font-size:20px;font-weight:800;color:#B71C1C">${invoiceCurrency(bill.grand_total)}</td></tr>
+    <tr><td style="padding:8px 6px;color:#167c36;font-weight:700">Total saved (excluding delivery)</td><td style="text-align:right;color:#167c36;font-weight:700">${invoiceCurrency(summary.total_savings)}</td></tr>
+    </table></div>
+    <div style="margin-top:12px;font-size:10px;color:#777">A dash (—) means the product has no MRP recorded; no MRP saving is assumed for that item.</div>
+    ${bill.notes ? '<div style="margin-top:12px;font-size:12px"><b>Note:</b> '+safeHtml(bill.notes)+'</div>' : ''}` : '';
+  return `<div style="width:760px;height:1075px;box-sizing:border-box;position:relative;background:#fff;color:#222;font-family:Arial,'Noto Sans Tamil',sans-serif;padding:42px 40px 56px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:4px solid #D7261E;padding-bottom:18px">
+      <div style="max-width:55%"><div style="font-size:26px;font-weight:800;color:#C62828;overflow-wrap:anywhere">${safeHtml(profile.shop_name)}</div>
+      <div style="font-size:12px;line-height:1.6;color:#555;margin-top:6px;white-space:pre-line">${safeHtml(profile.shop_address || '')}</div>
+      <div style="font-size:12px;color:#555;margin-top:4px">${safeHtml(profile.shop_phone || '')}</div></div>
+      <div style="text-align:right"><div style="font-weight:800;font-size:24px;letter-spacing:1px">SALES BILL</div>
+      <div style="font-size:11px;color:#777;margin-top:6px">Velan Crackers</div></div>
+    </div>
+    ${details}
+    <table style="border-collapse:collapse;table-layout:fixed;width:100%;font-size:11.5px;margin-top:5px">
+      <colgroup><col style="width:33%"><col style="width:7%"><col style="width:15%"><col style="width:15%"><col style="width:15%"><col style="width:15%"></colgroup>
+      <thead><tr style="background:#FCE8E7;color:#89211C"><th style="text-align:left;padding:11px 5px">ITEM</th><th style="padding:11px 4px">QTY</th><th style="text-align:right;padding:11px 4px">MRP</th><th style="text-align:right;padding:11px 4px">RATE</th><th style="text-align:right;padding:11px 4px">SAVED</th><th style="text-align:right;padding:11px 4px">AMOUNT</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${totals}
+    <div style="position:absolute;bottom:31px;left:40px;right:40px;border-top:1px solid #ddd;padding-top:10px;display:flex;justify-content:space-between;font-size:11px;color:#777">
+      <span>Thank you for shopping with ${safeHtml(profile.shop_name)}!</span><span>Page ${pageNo} of ${pageCount}</span>
+    </div>
+    </div>`;
+}
+
+async function makeInvoicePdf(bill) {
+  if (!window.jspdf || !window.html2canvas) throw new Error('PDF library could not load. Check your internet connection.');
+  const profile = bill.shop_snapshot || SHOP_DEFAULTS;
+  const items = Array.isArray(bill.items) ? bill.items : [];
+  const pages = Math.max(1, Math.ceil(items.length / 11));
+  const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+  const holder = document.createElement('div');
+  holder.setAttribute('aria-hidden','true');
+  holder.style.cssText = 'position:fixed;left:-20000px;top:0;width:760px;z-index:-1;pointer-events:none;';
+  document.body.appendChild(holder);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    for (let p = 0; p < pages; p++) {
+      holder.innerHTML = invoicePageHtml(bill, profile, items.slice(p*11, (p+1)*11), p+1, pages);
+      const canvas = await window.html2canvas(holder.firstElementChild, { backgroundColor: '#ffffff', scale: 1.7, logging: false, useCORS: false });
+      if (p > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.87), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+    }
+    return pdf.output('blob');
+  } finally { holder.remove(); }
+}
+
+async function uploadInvoicePdf(bill, ownerId) {
+  const blob = await makeInvoicePdf(bill);
+  const storagePath = `${ownerId}/${bill.id}.pdf`;
+  const { error: uploadError } = await sb.storage.from(INVOICE_BUCKET).upload(storagePath, blob, { upsert: true, contentType: 'application/pdf', cacheControl: '3600' });
+  if (uploadError) throw uploadError;
+  const { data, error } = await sb.from('invoices').update({ pdf_path: storagePath, status:'ready' }).eq('id', bill.id).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+function downloadInvoiceBlob(blob, invoiceNumber) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (invoiceNumber || 'Velan-Crackers-Bill') + '.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+async function invoiceSignedUrl(bill) {
+  if (!bill.pdf_path) throw new Error('PDF not stored yet. Select Retry PDF first.');
+  const { data, error } = await sb.storage.from(INVOICE_BUCKET).createSignedUrl(bill.pdf_path, 7 * 24 * 60 * 60);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+function PosQuantityControl({value, onMinus, onPlus, onValue, label, small=false, busy=false}) {
+  return <div className={'pos-qty'+(small?' pos-qty-small':'')}>
+    <button type="button" disabled={busy || Number(value) <= (onValue ? 1 : 0)} onClick={onMinus} aria-label={'Decrease quantity of '+label}>−</button>
+    {onValue ? <input type="number" inputMode="numeric" min="1" max="10000" step="1" required value={value} onChange={e => onValue(e.target.value)} disabled={busy} aria-label={'Quantity of '+label} /> : <span aria-label={'Quantity '+value}>{value}</span>}
+    <button type="button" disabled={busy || Number(value) >= 10000} onClick={onPlus} aria-label={'Increase quantity of '+label}>+</button>
+  </div>;
+}
+
+function BillEditor({ products, profile, onClose, onSaved, initialBill = null }) {
+  // The catalogue and bill share a single set of line items. Product CRUD outside billing is untouched.
+  const [billDate, setBillDate] = useState(initialBill?.invoice_date || dateLocal());
+  const newRowId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  const [lines, setLines] = useState(() => (Array.isArray(initialBill?.items) ? initialBill.items : []).map(item => ({ ...item, unit_mrp: item.unit_mrp ?? '', row_id:newRowId() })));
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [mobilePane, setMobilePane] = useState('catalogue');
+  const [expandedItems, setExpandedItems] = useState({});
+  const [showExtras, setShowExtras] = useState(() => Number(initialBill?.discount_amount || 0) > 0 || Number(initialBill?.delivery_amount || 0) > 0 || !!initialBill?.notes);
+  const productSearchRef = useRef(null);
+  const [discount, setDiscount] = useState(String(initialBill?.discount_amount ?? 0));
+  const [delivery, setDelivery] = useState(String(initialBill?.delivery_amount ?? 0));
+  const [paymentStatus] = useState(initialBill?.payment_status || 'unpaid');
+  const [paymentMethod] = useState(initialBill?.payment_method || 'Cash');
+  const [notes, setNotes] = useState(initialBill?.notes || '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const totals = useMemo(() => calculateBill(lines, discount, delivery), [lines, discount, delivery]);
+  const totalQuantity = useMemo(() => lines.reduce((a, l) => a + (Number(l.quantity) || 0), 0), [lines]);
+  const categories = useMemo(() => ['All', ...new Set(products.map(p => String(p.category || '').trim()).filter(Boolean))], [products]);
+  const matches = useMemo(() => {
+    const q = catalogSearch.trim().toLocaleLowerCase();
+    return products.filter(p => (activeCategory === 'All' || p.category === activeCategory) &&
+      (!q || (String(p.name || '') + ' ' + String(p.category || '') + ' ' + String(p.unit || '')).toLocaleLowerCase().includes(q)));
+  }, [products, activeCategory, catalogSearch]);
+  const selectedCounts = useMemo(() => lines.reduce((obj, item) => {
+    if (item.product_id != null) obj[String(item.product_id)] = (obj[String(item.product_id)] || 0) + (Number(item.quantity) || 0);
+    return obj;
+  }, {}), [lines]);
+
+  const updateLine = (id, patch) => setLines(prev => prev.map(l => l.row_id === id ? { ...l, ...patch } : l));
+  const removeLine = (id) => setLines(prev => prev.filter(l => l.row_id !== id));
+  const adjustProduct = (product, delta) => {
+    if (busy) return;
+    setLines(prev => {
+      const index = prev.findIndex(l => String(l.product_id) === String(product.id));
+      if (index >= 0) {
+        const newQty = Math.min(10000, Math.max(0, (Number(prev[index].quantity) || 0) + delta));
+        return newQty === 0 ? prev.filter((_, i) => i !== index) : prev.map((l, i) => i === index ? {...l, quantity:newQty} : l);
+      }
+      if (delta <= 0) return prev;
+      const rawMrp = product.mrp == null || product.mrp === '' ? null : Number(product.mrp);
+      const mrp = rawMrp !== null && Number.isFinite(rawMrp) && rawMrp > 0 ? rawMrp : '';
+      return [...prev, { row_id:newRowId(), product_id:product.id, name:product.name, unit:product.unit || '', quantity:1,
+        unit_price:Number(product.price) || 0, unit_mrp:mrp }];
+    });
+  };
+  const addCustom = () => {
+    if (busy) return;
+    const row = newRowId();
+    setLines(prev => [...prev, {row_id:row, product_id:null, name:'', unit:'', quantity:1, unit_price:0, unit_mrp:''}]);
+    setExpandedItems(prev => ({...prev,[row]:true}));
+    setMobilePane('bill');
+  };
+  function onSearchKeyDown(e) {
+    if (e.key === 'Escape') { setCatalogSearch(''); e.preventDefault(); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (matches.length) { adjustProduct(matches[0], 1); setCatalogSearch(''); }
+    }
+  }
+  useEffect(() => {
+    const handler = e => {
+      if ((e.key === '/' && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+        const tag = e.target?.tagName?.toLowerCase();
+        if (e.key === '/' && (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable)) return;
+        e.preventDefault(); setMobilePane('catalogue'); productSearchRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  async function save(e, downloadAfter = false) {
+    e.preventDefault();
+    if (busy) return;
+    setError('');
+    if (!billDate) { setError('Select a bill date.'); return; }
+    if (!lines.length) { setError('Add at least one cracker to the bill.'); return; }
+    const cleanLines = lines.map(l => ({ product_id:l.product_id || null, name:String(l.name || '').trim(), unit:String(l.unit || '').trim(),
+      quantity:Number(l.quantity), unit_price:roundMoney(l.unit_price),
+      unit_mrp:l.unit_mrp === '' || l.unit_mrp === null ? null : roundMoney(l.unit_mrp) }));
+    if (cleanLines.some(l => !l.name || !Number.isInteger(l.quantity) || l.quantity < 1 || l.quantity > 10000 || !Number.isFinite(l.unit_price) || l.unit_price < 0 ||
+      (l.unit_mrp !== null && (!Number.isFinite(l.unit_mrp) || l.unit_mrp <= 0 || l.unit_mrp < l.unit_price)))) {
+      setError('Check every item: name, quantity (1–10,000), selling rate, and an MRP that is at least the selling rate (or leave MRP blank).'); return;
+    }
+    if (![discount,delivery].every(x => x !== '' && Number.isFinite(Number(x)) && Number(x) >= 0) || totals.discount_amount > totals.subtotal) {
+      setError('Extra discount and delivery amounts must be valid; extra discount cannot exceed the selling subtotal.'); return;
+    }
+    setBusy(true);
+    let savedRow = null;
+    try {
+      const owner = await getBillingOwner();
+      const { subtotal, discount_amount, delivery_amount, grand_total } = totals;
+      // Existing schemas require customer_name; do not collect any customer information.
+      const payload = { invoice_date:billDate, items:cleanLines, subtotal, discount_amount, delivery_amount, grand_total,
+        notes:notes.trim(), payment_status:paymentStatus, payment_method:paymentMethod,
+        shop_snapshot:{ ...profile }, status:'draft', pdf_path:null };
+      const result = initialBill
+        ? await sb.from('invoices').update(payload).eq('id',initialBill.id).eq('owner_id',owner).select('*').single()
+        : await sb.from('invoices').insert({ ...payload, owner_id:owner, customer_name:'Counter Sale', customer_phone:'', customer_address:'', customer_email:'' }).select('*').single();
+      if (result.error) throw result.error;
+      savedRow = result.data;
+      const completed = await uploadInvoicePdf(savedRow, owner);
+      if (downloadAfter) {
+        try {
+          const { data:pdfFile, error:downloadErr } = await sb.storage.from(INVOICE_BUCKET).download(completed.pdf_path);
+          if (downloadErr) throw downloadErr;
+          downloadInvoiceBlob(pdfFile, completed.invoice_number);
+        } catch (downloadErr) {
+          onSaved(completed, 'Bill and PDF were saved in Supabase, but local download failed. Use Download PDF in Saved bills. ' + (downloadErr.message || ''));
+          return;
+        }
+      }
+      onSaved(completed, null);
+    } catch (err) {
+      if (savedRow) onSaved(savedRow, 'Bill details were saved, but PDF upload failed. Use Retry PDF in Saved bills. ' + (err.message || ''));
+      else setError(err.message || 'Could not save the bill. Check the Supabase SQL setup.');
+    } finally { setBusy(false); }
+  }
+
+
+
+  return <div className="bill-editor pos-editor">
+    <div className="pos-topbar">
+      <div className="pos-heading"><h2 className="admin-title">{initialBill ? 'Edit bill · '+initialBill.invoice_number : 'New sales bill'}</h2>
+        <p className="admin-sub">Fast counter billing · Catalogue prices stay unchanged</p></div>
+      <div className="pos-top-actions">
+        <div className="pos-date-control"><label htmlFor="pos-bill-date">Bill date</label><input id="pos-bill-date" type="date" required value={billDate} onChange={e=>setBillDate(e.target.value)} disabled={busy} /></div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} disabled={busy}>Saved bills</button>
+      </div>
+    </div>
+    {error && <div className="modal-error" role="alert">{error}</div>}
+    <form onSubmit={e=>save(e,false)}>
+      <div className="pos-mobile-tabs" role="group" aria-label="Billing panels">
+        <button type="button" className={mobilePane==='catalogue'?'active':''} aria-pressed={mobilePane==='catalogue'} onClick={()=>setMobilePane('catalogue')}>Find products</button>
+        <button type="button" className={mobilePane==='bill'?'active':''} aria-pressed={mobilePane==='bill'} onClick={()=>setMobilePane('bill')}>Current bill <span>{totalQuantity}</span></button>
+      </div>
+      <div className="pos-workspace">
+        <section className={'pos-catalogue'+(mobilePane==='catalogue'?' pos-visible-mobile':'')} aria-label="Crackers catalogue">
+          <div className="pos-panel-title"><h3>Products</h3><span>{matches.length} found</span></div>
+          <div className="pos-search-field"><span><SearchIcon /></span>
+            <input ref={productSearchRef} id="pos-search" type="search" value={catalogSearch} onChange={e=>setCatalogSearch(e.target.value)} onKeyDown={onSearchKeyDown}
+              placeholder="Search cracker name or category" aria-label="Search cracker products" autoComplete="off" disabled={busy} />
+            {catalogSearch && <button type="button" className="pos-clear-search" aria-label="Clear search" onClick={()=>{setCatalogSearch('');productSearchRef.current?.focus();}}>×</button>}
+          </div>
+          <div className="pos-category-rail" aria-label="Filter by category">{categories.map(c => <button type="button" key={c}
+            className={activeCategory===c?'active':''} aria-pressed={activeCategory===c} onClick={()=>setActiveCategory(c)}>{c}</button>)}</div>
+          <div className="pos-catalogue-list" role="list" aria-label="Available crackers">
+            {matches.length===0 && <div className="pos-empty-list">No matching crackers. Try another search or choose All.</div>}
+            {matches.map(p => { const qty = selectedCounts[String(p.id)] || 0;
+              const price = Number(p.price) || 0;
+              const mrp = p.mrp == null || p.mrp==='' ? null : Number(p.mrp);
+              const saving = mrp && mrp>price ? mrp-price : 0;
+              return <div className={'pos-product'+(qty?' pos-product-selected':'')} role="listitem" key={p.id}>
+                <div className="pos-product-info"><strong title={p.name}>{p.name}</strong><span>{p.unit || 'Item'}{p.category?' · '+p.category:''}</span></div>
+                <div className="pos-product-price"><strong>{invoiceCurrency(price)}</strong>
+                  {saving>0 ? <small>MRP {invoiceCurrency(mrp)} · Save {invoiceCurrency(saving)}</small> : <small>{mrp?'MRP '+invoiceCurrency(mrp):'MRP not set'}</small>}</div>
+                {qty ? <PosQuantityControl busy={busy} small value={qty} label={p.name} onMinus={()=>adjustProduct(p,-1)} onPlus={()=>adjustProduct(p,1)} /> :
+                  <button className="pos-product-add" type="button" disabled={busy} onClick={()=>adjustProduct(p,1)} aria-label={'Add '+p.name+' to bill'}>+ Add</button>}
+              </div>;
+            })}
+          </div>
+          <div className="pos-catalogue-hint">Tap <b>Add</b> or use <b>+</b> / <b>−</b> · Press <b>Enter</b> to add first search match</div>
+        </section>
+
+        <section className={'pos-ticket'+(mobilePane==='bill'?' pos-visible-mobile':'')} aria-label="Current bill">
+          <div className="pos-ticket-header"><div><h3>Current bill <span>{lines.length} items</span></h3><p>{totalQuantity} units selected</p></div>
+            <div className="pos-ticket-actions"><button type="button" onClick={addCustom} disabled={busy}>+ Custom</button>
+              {lines.length>0 && <button className="pos-clear-bill" type="button" disabled={busy} onClick={()=>{if(window.confirm('Clear all items from this bill?')){setLines([]);setExpandedItems({});}}}>Clear</button>}</div></div>
+          {!lines.length ? <div className="pos-ticket-empty"><div className="pos-empty-symbol">＋</div><strong>Your bill is empty</strong><span>Search and add products to start billing.</span>
+            <button type="button" onClick={()=>{setMobilePane('catalogue');productSearchRef.current?.focus();}}>Find crackers</button></div> :
+            <div className="pos-ticket-lines">{lines.map((line,index)=>{
+              const qty=Number(line.quantity)||0;
+              const rate=Number(line.unit_price)||0;
+              const mrp=lineMrp(line);
+              const saving=roundMoney(qty * Math.max(0,(mrp??rate)-rate));
+              const showEdit=!!expandedItems[line.row_id];
+              return <div className="pos-ticket-line" key={line.row_id}>
+                <div className="pos-line-top"><span className="pos-line-index">{index+1}</span><div className="pos-line-name"><strong>{line.name || 'New custom item'}</strong>
+                  <span>{line.unit || 'Item'}{mrp!==null ? ' · MRP '+invoiceCurrency(mrp) : ' · MRP not set'}</span></div>
+                  <div className="pos-line-side"><b>{invoiceCurrency(qty*rate)}</b>{saving>0 && <small>Save {invoiceCurrency(saving)}</small>}</div>
+                  <button className="pos-line-remove" type="button" title="Remove item" aria-label={'Remove '+(line.name||'item')} disabled={busy} onClick={()=>removeLine(line.row_id)}><TrashIcon /></button>
+                </div>
+                <div className="pos-line-controls"><PosQuantityControl busy={busy} value={line.quantity} label={line.name||'custom item'}
+                   onMinus={()=>updateLine(line.row_id,{quantity:Math.max(1,Number(line.quantity||1)-1)})}
+                   onPlus={()=>updateLine(line.row_id,{quantity:Math.min(10000,Number(line.quantity||0)+1)})}
+                   onValue={value=>updateLine(line.row_id,{quantity:value})} />
+                  <label className="pos-line-rate">Rate ₹<input type="number" inputMode="decimal" min="0" step="0.01" required disabled={busy} value={line.unit_price} onChange={e=>updateLine(line.row_id,{unit_price:e.target.value})} aria-label={'Selling price of '+line.name} /></label>
+                  <button className="pos-edit-toggle" type="button" aria-expanded={showEdit} disabled={busy} onClick={()=>setExpandedItems(prev=>({...prev,[line.row_id]:!prev[line.row_id]}))}>{showEdit?'Done':'Edit'}</button>
+                </div>
+                {showEdit && <div className="pos-edit-fields">
+                  <label>Product name<input type="text" required disabled={busy} value={line.name} onChange={e=>updateLine(line.row_id,{name:e.target.value})} /></label>
+                  <label>Unit<input type="text" disabled={busy} value={line.unit} onChange={e=>updateLine(line.row_id,{unit:e.target.value})} placeholder="Box" /></label>
+                  <label>MRP ₹<input type="number" inputMode="decimal" min="0.01" step="0.01" disabled={busy} value={line.unit_mrp??''} onChange={e=>updateLine(line.row_id,{unit_mrp:e.target.value})} placeholder="Not set" /></label>
+                </div>}
+              </div>;
+            })}</div>}
+          <div className="pos-ticket-bottom">
+            <div className="pos-bill-summary">
+              <div><span>MRP / listed value</span><b>{invoiceCurrency(totals.mrp_total)}</b></div>
+              {totals.product_savings>0 && <div className="pos-saving"><span>Saved from MRP</span><b>− {invoiceCurrency(totals.product_savings)}</b></div>}
+              <div><span>Selling subtotal</span><b>{invoiceCurrency(totals.subtotal)}</b></div>
+              {totals.discount_amount>0 && <div><span>Extra discount</span><b>− {invoiceCurrency(totals.discount_amount)}</b></div>}
+              {totals.delivery_amount>0 && <div><span>Delivery / extra</span><b>+ {invoiceCurrency(totals.delivery_amount)}</b></div>}
+              <div className="pos-total"><span>Grand total</span><strong>{invoiceCurrency(totals.grand_total)}</strong></div>
+              <div className="pos-saving pos-total-savings"><span>Total discount</span><b>{invoiceCurrency(totals.total_savings)}</b></div>
+            </div>
+            <button type="button" className="pos-extras-toggle" aria-expanded={showExtras} onClick={()=>setShowExtras(v=>!v)}>{showExtras?'− Hide':'＋ Add'} extra discount / delivery / note</button>
+            {showExtras && <div className="pos-extras">
+              <label>Extra bill discount ₹<input type="number" step="0.01" min="0" disabled={busy} value={discount} onChange={e=>setDiscount(e.target.value)} /></label>
+              <label>Delivery / extra ₹<input type="number" step="0.01" min="0" disabled={busy} value={delivery} onChange={e=>setDelivery(e.target.value)} /></label>
+              <label className="pos-note">Note (optional)<input type="text" disabled={busy} value={notes} onChange={e=>setNotes(e.target.value)} /></label>
+            </div>}
+            <div className="pos-save-actions"><button className="pos-save-main" type="button" disabled={busy||!lines.length} onClick={e=>save(e,true)}>{busy?'Saving…':'Save & download PDF'}</button>
+              <button className="pos-save-secondary" type="submit" disabled={busy||!lines.length}>Save to cloud</button></div>
+            <p className="pos-save-caption">Bills and PDFs are stored in private Supabase storage. No customer details or GST fields.</p>
+          </div>
+        </section>
+      </div>
+      {mobilePane==='catalogue' && <div className="pos-mobile-bottom"><div><small>{totalQuantity} units · {lines.length} items</small><b>{invoiceCurrency(totals.grand_total)}</b></div>
+        <button type="button" onClick={()=>setMobilePane('bill')}>View bill →</button></div>}
+    </form>
+  </div>;
+}
+
+function ProfileEditor({ profile, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...profile });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function save(e) {
+    e.preventDefault(); setBusy(true); setError('');
+    try {
+      const ownerId = await getBillingOwner();
+      const row = { owner_id:ownerId, shop_name:form.shop_name.trim(), shop_phone:form.shop_phone.trim(), shop_address:form.shop_address.trim() };
+      if (!row.shop_name) throw new Error('Shop name is required.');
+      const { error } = await sb.from('billing_profiles').upsert(row, { onConflict:'owner_id' });
+      if (error) throw error;
+      onSaved(row);
+    } catch (e) { setError(e.message || 'Could not save shop details.'); }
+    finally { setBusy(false); }
+  }
+  return <div className="bill-panel"><div className="billing-head"><h2 className="admin-title">Details printed on bills</h2><button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button></div>
+    {error && <div className="modal-error">{error}</div>}
+    <form onSubmit={save}><div className="field"><label>Shop name</label><input required value={form.shop_name} onChange={e => setForm({...form,shop_name:e.target.value})} /></div>
+      <div className="field"><label>Shop phone number(s)</label><input value={form.shop_phone} onChange={e => setForm({...form,shop_phone:e.target.value})} /></div>
+      <div className="field"><label>Shop address (appears on PDF)</label><textarea rows="3" value={form.shop_address} onChange={e => setForm({...form,shop_address:e.target.value})} /></div>
+      <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save shop details to cloud'}</button>
+    </form>
+  </div>;
+}
+
+function BillingManager({ products }) {
+  const [bills, setBills] = useState([]);
+  const [profile, setProfile] = useState(SHOP_DEFAULTS);
+  const [mode, setMode] = useState('create');
+  const [editingBill, setEditingBill] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [actionId, setActionId] = useState(null);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [search, setSearch] = useState('');
+
+  const reload = useCallback(async () => {
+    setBusy(true); setError('');
+    try {
+      const owner = await getBillingOwner();
+      const [billRes, profileRes] = await Promise.all([
+        sb.from('invoices').select('*').eq('owner_id', owner).order('created_at', { ascending:false }).limit(200),
+        sb.from('billing_profiles').select('*').eq('owner_id', owner).maybeSingle()
+      ]);
+      if (billRes.error) throw billRes.error;
+      if (profileRes.error) throw profileRes.error;
+      setBills(billRes.data || []);
+      setProfile(profileRes.data ? {shop_name:profileRes.data.shop_name,shop_phone:profileRes.data.shop_phone,shop_address:profileRes.data.shop_address} : SHOP_DEFAULTS);
+    } catch (e) {
+      setError((e.message || 'Could not load bills.') + ' Run the supplied Supabase SQL setup if this is the first time.');
+    } finally { setBusy(false); }
+  }, []);
+  useEffect(() => { reload(); }, [reload]);
+
+  function onSaved(row, warning) {
+    setBills(prev => [row, ...prev.filter(x => x.id !== row.id)]);
+    setEditingBill(null);
+    setMode('list');
+    setNotice(warning || ('Bill '+row.invoice_number+' saved to Supabase cloud storage.'));
+  }
+  async function withBillAction(row, action) {
+    // Reserve a tab synchronously on click: otherwise browsers block window.open after an async signing request.
+    const shareTab = action === 'whatsapp' ? window.open('about:blank', '_blank') : null;
+    setActionId(row.id); setError(''); setNotice('');
+    try {
+      if (action === 'retry') {
+        const owner = await getBillingOwner();
+        const repaired = await uploadInvoicePdf(row, owner);
+        setBills(prev => prev.map(x => x.id === row.id ? repaired : x));
+        setNotice('PDF uploaded successfully.');
+      } else if (action === 'download') {
+        if (!row.pdf_path) throw new Error('PDF missing. Retry PDF first.');
+        const { data, error } = await sb.storage.from(INVOICE_BUCKET).download(row.pdf_path);
+        if (error) throw error;
+        downloadInvoiceBlob(data, row.invoice_number);
+      } else {
+        const signed = await invoiceSignedUrl(row);
+        const body = `Velan Crackers sales bill ${row.invoice_number}\nAmount: ${invoiceCurrency(row.grand_total)}\nView/download PDF: ${signed}\n\nThis secure link expires in 7 days.`;
+        if (action === 'whatsapp') {
+          const link = 'https://wa.me/?text='+encodeURIComponent(body);
+          if (shareTab && !shareTab.closed) { shareTab.opener = null; shareTab.location.replace(link); }
+          else { window.location.href = link; }
+          setNotice('WhatsApp opened with a bill message. Press Send in WhatsApp to deliver it.');
+        } else if (action === 'email') {
+          const mail = `mailto:?subject=${encodeURIComponent('Velan Crackers bill '+row.invoice_number)}&body=${encodeURIComponent(body)}`;
+          window.location.href = mail;
+          setNotice('Your email app was opened. Send the message there.');
+        } else if (action === 'copy') {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(signed);
+          } else {
+            const temp = document.createElement('textarea');
+            temp.value = signed; temp.style.cssText = 'position:fixed;left:-9999px;top:0';
+            document.body.appendChild(temp); temp.select();
+            if (!document.execCommand('copy')) throw new Error('Automatic copy unavailable; use the WhatsApp or Email option.');
+            temp.remove();
+          }
+          setNotice('Secure 7-day PDF link copied.');
+        }
+      }
+    } catch (e) { if (shareTab && !shareTab.closed) shareTab.close(); setError(e.message || 'Action failed.'); }
+    finally { setActionId(null); }
+  }
+  const displayed = useMemo(() => bills.filter(b => `${b.invoice_number} ${b.invoice_date} ${b.payment_method}`.toLowerCase().includes(search.trim().toLowerCase())), [bills,search]);
+  const summary = useMemo(() => ({ count:bills.length, total:roundMoney(bills.reduce((x,b)=>x+Number(b.grand_total),0)), unpaid:roundMoney(bills.filter(b=>b.payment_status==='unpaid').reduce((x,b)=>x+Number(b.grand_total),0)) }), [bills]);
+
+  return <div>
+    {error && <div className="modal-error">{error}</div>}
+    {notice && <div className="bill-notice" role="status">{notice}</div>}
+    {mode === 'create' ? <BillEditor key={editingBill?.id || 'new'} initialBill={editingBill} products={products} profile={profile} onClose={() => {setEditingBill(null);setMode('list');}} onSaved={onSaved} /> :
+     mode === 'profile' ? <ProfileEditor profile={profile} onClose={() => setMode('list')} onSaved={p => {setProfile(p);setMode('list');setNotice('Shop details saved to cloud.');}}/> : <>
+      <div className="billing-head"><div><h1 className="admin-title">Bills & invoices</h1><p className="admin-sub">Create, edit and download simple sales bills. PDFs are stored privately in Supabase.</p></div>
+        <div className="bill-head-buttons"><button className="btn btn-ghost btn-sm" type="button" onClick={() => setMode('profile')}>Shop details</button><button className="btn btn-primary btn-sm" type="button" onClick={() => {setEditingBill(null);setMode('create');}}><PlusIcon /> New bill</button></div></div>
+      <div className="bill-stats"><div><span>Bills loaded</span><strong>{summary.count}</strong></div><div><span>Total billed</span><strong>{invoiceCurrency(summary.total)}</strong></div><div><span>Unpaid billed</span><strong>{invoiceCurrency(summary.unpaid)}</strong></div></div>
+      <div className="field" style={{marginTop:14}}><label>Find saved bill (most recent 200)</label><input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search bill number, date, payment method" /></div>
+      {busy && <p className="admin-sub">Loading cloud bills…</p>}
+      {!busy && displayed.length===0 ? <div className="admin-empty">No bills found. Select <b>New bill</b> to create your first one.</div> :
+      <div className="bill-history">{displayed.map(b => <div className="bill-history-item" key={b.id}>
+        <div className="bill-history-info"><strong>{b.invoice_number}</strong><div className="admin-sub">{b.invoice_date} · {b.payment_status === 'paid' ? 'Paid' : 'Unpaid'} {b.pdf_path ? '· PDF in cloud' : '· PDF needs upload'}</div></div>
+        <div className="bill-history-total">{invoiceCurrency(b.grand_total)}</div>
+        <div className="bill-history-actions">
+          <button type="button" className="btn btn-ghost btn-sm" disabled={actionId===b.id} onClick={() => {setEditingBill(b);setMode('create');setError('');setNotice('');}}>Edit bill</button>
+          {b.pdf_path ? <>
+            <button type="button" className="btn btn-primary btn-sm" disabled={actionId===b.id} onClick={() => withBillAction(b,'whatsapp')}>WhatsApp</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={actionId===b.id} onClick={() => withBillAction(b,'email')}>Email</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={actionId===b.id} onClick={() => withBillAction(b,'download')}>Download PDF</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={actionId===b.id} onClick={() => withBillAction(b,'copy')}>Copy link</button>
+          </> : <button type="button" className="btn btn-primary btn-sm" disabled={actionId===b.id} onClick={() => withBillAction(b,'retry')}>Retry PDF upload</button>}
+        </div>
+      </div>)}</div>}
+      <div style={{marginTop:12}}><button type="button" className="btn btn-ghost btn-sm" onClick={reload} disabled={busy}>Refresh bills</button></div>
+      <p className="admin-sub" style={{marginTop:14}}>For privacy, PDFs are in a private bucket. Shared links expire after 7 days; generate a fresh link whenever you need. Sending via WhatsApp or email requires a final tap in that app.</p>
+    </>}
+  </div>;
+}
+
 /* ================= admin ================= */
 
 const BLANK_FORM = { name: "", category: "", unit: "", price: "", mrp: "", img: "", details: "" };
@@ -1215,6 +2115,7 @@ function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onR
   const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState("");
   const [filterCat, setFilterCat] = useState("All");
+  const [adminSection, setAdminSection] = useState("products");
 
   useEffect(() => {
     if (!toast) return;
@@ -1265,7 +2166,12 @@ function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onR
         </div>
       </header>
 
-      <main className="admin-page">
+      <main className={adminSection === "billing" ? "admin-page admin-page-billing" : "admin-page"}>
+        <nav className="admin-tabs" aria-label="Admin sections">
+          <button type="button" className={"admin-tab"+(adminSection === "products" ? " active" : "")} onClick={() => setAdminSection("products")}>Products</button>
+          <button type="button" className={"admin-tab"+(adminSection === "billing" ? " active" : "")} onClick={() => setAdminSection("billing")}>Bills &amp; Invoices</button>
+        </nav>
+        {adminSection === "billing" ? <BillingManager products={products} /> : <>
         <h1 className="admin-title">Manage products</h1>
         <p className="admin-sub">Signed in as {userEmail}. Changes show in the shop for every customer immediately.</p>
 
@@ -1313,11 +2219,12 @@ function Admin({ products, whatsapp, userEmail, theme, onCycleTheme, onBack, onR
             ))}
           </div>
         )}
+        </>}
       </main>
 
-      <button type="button" className="btn btn-primary admin-fab" onClick={() => setEditing({})} aria-label="Add product">
+      {adminSection === "products" && <button type="button" className="btn btn-primary admin-fab" onClick={() => setEditing({})} aria-label="Add product">
         <PlusIcon /> Add product
-      </button>
+      </button>}
 
       {editing !== null && (
         <ProductFormModal initial={editing.id ? editing : null} categories={categories} onCancel={() => setEditing(null)} onSave={handleSave} />
